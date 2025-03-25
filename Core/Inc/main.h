@@ -28,10 +28,21 @@ extern "C" {
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f0xx_hal.h"
+#include "stm32f0xx_ll_usart.h"
+#include "stm32f0xx_ll_rcc.h"
+#include "stm32f0xx_ll_bus.h"
+#include "stm32f0xx_ll_cortex.h"
+#include "stm32f0xx_ll_system.h"
+#include "stm32f0xx_ll_utils.h"
+#include "stm32f0xx_ll_pwr.h"
+#include "stm32f0xx_ll_gpio.h"
+#include "stm32f0xx_ll_dma.h"
+
+#include "stm32f0xx_ll_exti.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "SEGGER_RTT.h"
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
@@ -46,6 +57,11 @@ extern "C" {
 
 /* Exported macro ------------------------------------------------------------*/
 /* USER CODE BEGIN EM */
+#if defined(DEBUG) && !defined(NDEBUG)
+#define debug_printf(...) SEGGER_RTT_printf(0, ##__VA_ARGS__)
+#else
+#define debug_printf(...)
+#endif // DEBUG
 
 /* USER CODE END EM */
 
