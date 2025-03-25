@@ -1,0 +1,3 @@
+[submodule "lib/sim800"]
+	path = lib/sim800
+	url = git@github.com:Bastion-RND/MCU_Libraries_SIM800.git
