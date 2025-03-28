@@ -35,9 +35,8 @@ bool			sim800_parser_add(sim800_t*, const char*, sim800_parser_handler_t, void* 
 bool			sim800_parser_remove(sim800_t*, const char*);
 sim800_Result_t	sim800_cmd(sim800_t*, const char*, uint32_t to, sim800_callback_t, void* param, sim800_Flow_t);
 
-bool    _sim800_cmd_lock(sim800_t* p, uint32_t timeout);
-void    _sim800_cmd_unlock(sim800_t* p);
-bool    _sim800_is_cmd_locked(sim800_t* p);
+void    sim800_unlock(sim800_t* p);
+bool    sim800_is_locked(sim800_t* p);
 
 
 /* callback`s */

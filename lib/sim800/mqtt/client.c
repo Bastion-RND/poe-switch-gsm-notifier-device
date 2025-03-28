@@ -402,7 +402,7 @@ on_data_receive_callback(sim800GprsClient_t* conn, sim800GprsClientRxStage_t RxS
 {
     mqttClient_t* client = (mqttClient_t*)conn->ptr;
 
-    uint8_t* ptr;
+    volatile uint8_t* ptr;
     size_t len;
 
     int result;

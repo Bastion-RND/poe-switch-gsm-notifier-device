@@ -1,21 +1,21 @@
 /* USER CODE BEGIN Header */
 /**
-  ******************************************************************************
-  * @file           : main.h
-  * @brief          : Header for main.c file.
-  *                   This file contains the common defines of the application.
-  ******************************************************************************
-  * @attention
-  *
-  * Copyright (c) 2025 STMicroelectronics.
-  * All rights reserved.
-  *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
-  *
-  ******************************************************************************
-  */
+ ******************************************************************************
+ * @file           : main.h
+ * @brief          : Header for main.c file.
+ *                   This file contains the common defines of the application.
+ ******************************************************************************
+ * @attention
+ *
+ * Copyright (c) 2025 STMicroelectronics.
+ * All rights reserved.
+ *
+ * This software is licensed under terms that can be found in the LICENSE file
+ * in the root directory of this software component.
+ * If no LICENSE file comes with this software, it is provided AS-IS.
+ *
+ ******************************************************************************
+ */
 /* USER CODE END Header */
 
 /* Define to prevent recursive inclusion -------------------------------------*/
@@ -63,6 +63,10 @@ extern "C" {
 #define debug_printf(...)
 #endif // DEBUG
 
+#define BUTTON_SEND_SMS_CLOCK_ENA()   __HAL_RCC_GPIOC_CLK_ENABLE()
+#define BUTTON_SEND_SMS_PIN           GPIO_PIN_13
+#define BUTTON_SEND_SMS_PORT          GPIOC
+
 /* USER CODE END EM */
 
 /* Exported functions prototypes ---------------------------------------------*/
@@ -73,6 +77,10 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define SEND_SMS_BTN_Pin GPIO_PIN_13
+#define SEND_SMS_BTN_GPIO_Port GPIOC
+#define SIM800_RESET_Pin GPIO_PIN_3
+#define SIM800_RESET_GPIO_Port GPIOC
 
 /* USER CODE BEGIN Private defines */
 

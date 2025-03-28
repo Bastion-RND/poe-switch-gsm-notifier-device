@@ -6,6 +6,7 @@
  */
 
 #include <string.h>
+#include <stdio.h>
 
 //#include "Debug.h"
 
@@ -74,7 +75,7 @@ cipshut_parser(sim800_t* p, const char* str, void* param)
 {
     sim800_parser_remove(p, GPRS_SHUT_OK);
 
-    _sim800_cmd_unlock(p); /* NOTE! it`s OK */
+    sim800_unlock(p); /* NOTE! it`s OK */
     gprs_init_process(p, SIM800_EVENT_COMMAND_RESULT_OK, NULL);
 }
 
@@ -89,7 +90,7 @@ cifsr_parser(sim800_t* p, const char* str, void* param)
     //FIXME! sim800_ip_addr_parse(p, &ip->u8[0]);
     sim800_parser_remove(p, RESPONSE_LOCAL_IP);
 
-    _sim800_cmd_unlock(p); /* NOTE! No OK\r\n */
+    sim800_unlock(p); /* NOTE! No OK\r\n */
     request_cipstatus(p, SIM800_EVENT_COMMAND_RESULT_OK, NULL);
 }
 
@@ -251,12 +252,12 @@ client_transmit_process(sim800_t* p, sim800GprsClient_t* client)
                 SIM800_TXE_IT_ENABLE(); /* Transmit data */
             }
             if (client->Tx.idx >= client->Tx.len) {
-                _sim800_cmd_unlock(p); /* UNLOCK! */
+                sim800_unlock(p); /* UNLOCK! */
                 switch_client_tx_stage(client, SIM800_GPRS_CLIENT_TRANSMIT_AWAITING_RESULT);
             }
         }
         else {
-            _sim800_cmd_unlock(p); /* UNLOCK! */
+            sim800_unlock(p); /* UNLOCK! */
             switch_client_tx_stage(client, SIM800_GPRS_CLIENT_TRANSMIT_FAILED);
         }
     }
@@ -276,7 +277,7 @@ prompt_parser(sim800_t* p, const char* str, void* param)
         client_transmit_process(p, client);
     }
     else {
-        _sim800_cmd_unlock(p); /* something goes wrong...*/
+        sim800_unlock(p); /* something goes wrong...*/
     }
     sim800_parser_remove(p, SEND_DATA_PROMPT);
 }
@@ -663,7 +664,7 @@ gprs_state_machine(sim800_t* p)
 
         case SIM800_GPRS_STATE_IP_CONFIG:
         case SIM800_GPRS_STATE_INITIALIZATION:
-            if (!_sim800_is_cmd_locked(p))
+            if (!sim800_is_locked(p))
             {
                 /* every 5 seconds */
                 if (SIM800_GET_TICK() - ts_every_5_seconds >= 5 * 1000) {
@@ -738,7 +739,7 @@ gprs_state_machine(sim800_t* p)
                 }
             } /* until exit */
 
-            if (!_sim800_is_cmd_locked(p))
+            if (!sim800_is_locked(p))
             {
                 /* every second */
                 if ((SIM800_GET_TICK() - ts_every_second) >= 1 * 1000) {

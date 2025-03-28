@@ -132,9 +132,6 @@ struct sim800_
 
     cbuf_handle_t				TxCbufHandle;
     cbuf_handle_t				RxCbufHandle;
-
-//    ringbuffer_t*				pTxRing;
-//    ringbuffer_t*				pRxRing;
 };
 
 

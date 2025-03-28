@@ -22,6 +22,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "sim800.h"
+#include "button.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -32,6 +33,7 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 sim800_t* SIM800;
+Button_t user_button;
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -94,6 +96,7 @@ int main(void)
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
   SIM800 = sim800_init(0);
+  user_button =	button_init(ButtonActiveLevel_HIGH, BUTTON_SEND_SMS_ID);
 
   /* USER CODE END 2 */
 
@@ -104,6 +107,7 @@ int main(void)
     // debug_printf("Hello, world\n");
     // HAL_Delay(1000);
     sim800_run(SIM800);
+    button_run(&user_button);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -220,12 +224,30 @@ static void MX_USART2_UART_Init(void)
   */
 static void MX_GPIO_Init(void)
 {
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
   /* USER CODE BEGIN MX_GPIO_Init_1 */
 
   /* USER CODE END MX_GPIO_Init_1 */
 
   /* GPIO Ports Clock Enable */
+  __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(SIM800_RESET_GPIO_Port, SIM800_RESET_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin : SEND_SMS_BTN_Pin */
+  GPIO_InitStruct.Pin = SEND_SMS_BTN_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(SEND_SMS_BTN_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : SIM800_RESET_Pin */
+  GPIO_InitStruct.Pin = SIM800_RESET_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(SIM800_RESET_GPIO_Port, &GPIO_InitStruct);
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
 

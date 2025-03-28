@@ -3,6 +3,7 @@
  */
 
 #include "utf8_xcoder.h"
+#include <stdint.h>
 
 // Stops at any null characters.
 int decode_code_point(char **s) {
@@ -71,16 +72,16 @@ void code_point_to_str(char **s, int code)
 	*s += 4;
 }
 
-static unsigned char
+static uint8_t
 char_to_halfbyte(char ch)
 {
 	if (ch >= '0' && ch <= '9')
 		return (ch - '0');
-	else if (ch >= 'a' && ch <= 'f')
+	if (ch >= 'a' && ch <= 'f')
 		return (10 + ch - 'a');
-	else if (ch >= 'A' && ch <= 'F')
+	if (ch >= 'A' && ch <= 'F')
 		return (10 + ch - 'A');
-	else return 0;
+	return 0;
 }
 
 int	str_to_code_point(char **s)

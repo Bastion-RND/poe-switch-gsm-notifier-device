@@ -7,6 +7,8 @@
 
 //#include "Debug.h"
 
+#include <string.h>
+
 #include "sim800_parser.h"
 #include "sim800.h"
 
@@ -73,50 +75,47 @@ void
 sim800_rx_ring_parser(sim800_t* p)
 {
     char source[512];
-//    bool match_found = false;
+    bool match_found = false;
 
     if (!circular_buf_empty(p->RxCbufHandle))
     {
         sim800_readline(p, source, sizeof(source), 1000);
 
-        //        if (source[0] == '>') {
-        //        	printf("< %s > found: '%s'\n", __func__, source);
-        //        }
+        // debug_printf("[%s] buffer line <%s>\n", __func__, source);
 
         if (source[0] != '\0') {
-            //            if (strncmp(source, "AT+", 3) == 0 /* match */) {
-            //            	/* AT Command echo, drop */
-            //            	printf("< %s > drop: '%s'\n", __func__, source);
-            //            }
-            //            else {
-            for (int i = 0; i < SIM800_PARSERS_MAX; i++)
-            {
-                /* Processing one of targets */
-                sim800_Parser_t* parser = &p->Parser[i];
+            if (strncmp(source, "AT+", 3) == 0 /* match */) {
+            	/* AT Command echo, drop */
+            	// debug_printf("< %s > drop echo: '%s'\n", __func__, source);
+            } else {
+                for (int i = 0; i < SIM800_PARSERS_MAX; i++) {
+                    /* Processing one of targets */
+                    sim800_Parser_t* parser = &p->Parser[i];
 
-                if (parser->str && parser->len)
-                {
-                    if (is_match(source, parser->str, parser->len))
+                    if (parser->str && parser->len)
                     {
-//                        match_found = true;
-                        if (parser->handler)
-                            parser->handler(p, source, parser->handler_param);
+                        if (is_match(source, parser->str, parser->len))
+                        {
+                            match_found = true;
+                            debug_printf("Parse match: %s\n", parser->str);
+                            if (parser->handler)
+                                parser->handler(p, source, parser->handler_param);
+                        }
                     }
                 }
             }
-            //            }
 
-//            if (!match_found) {
-//            	printf("< %s > drop: '%s'\n", __func__, source);
-//            }
+            if (!match_found) {
+            	// debug_printf("< %s > drop: '%s'\n", __func__, source);
+            }
         }
-        //        printf("< %s > parsed: '%s'\n", __func__, source);
+        // debug_printf("< %s > parsed: '%s'\n", __func__, source);
     }
 
     /* Check command execution timeout */
-    if (_sim800_is_cmd_locked(p)) {
+    if (sim800_is_locked(p)) {
         if ((SIM800_GET_TICK() - p->Command.ts) >= p->Command.timeout) {
-            _sim800_cmd_unlock(p);
+            sim800_unlock(p);
             debug_printf("[SIM800] Warning: Cmd '%s' FINALIZE!\n", p->Command.str);
 
             /* Finalize broken command */
@@ -132,40 +131,46 @@ sim800_rx_ring_parser(sim800_t* p)
 /**
  *
  */
-void
-sim800_readline(sim800_t* p, char* str, size_t size, uint32_t timeout)
+void sim800_readline(sim800_t* p, char* str, size_t size, uint32_t timeout)
 {
-    uint32_t ts = SIM800_GET_TICK();
+    uint32_t ts = SIM800_GET_TICK(); // Получаем текущее время
 
-    int index = 0;
-    uint8_t byte;
+    int index = 0; // Индекс для записи символов в строку
+    uint8_t byte;  // Переменная для хранения текущего байта
 
-    for (;;) {
+    for (;;) { // Бесконечный цикл для чтения данных
         while (circular_buf_get(p->RxCbufHandle, &byte) == (-1)) {
+            // Если буфер пуст, ждем некоторое время
             if ((SIM800_GET_TICK() - ts) < timeout) {
-                SIM800_DELAY_MS(DELAY_TIMEOUT);
+                SIM800_DELAY_MS(DELAY_TIMEOUT); // Задержка перед повторным чтением
             }
             else {
-                str[0] = '\0';
-                return; // TIMEOUT...
+                str[0] = '\0'; // Очищаем строку
+                return; // Таймаут истек, выходим из функции
             }
         }
 
-        if (index == 1  && byte == ' ' && str[0] == '>') {
+        // Проверка на приглашение на отправку данных
+        if (index == 1 && byte == ' ' && str[0] == '>') {
             str[1] = byte;
             str[2] = '\0';
-            return; // DATA PROMPT
+            return; // Приглашение на отправку данных
         }
-        if (index && byte == '\n' && str[index - 1] == '\r') {
-            str[index - 1] = '\0';
-            return; // SUCCESS
+
+        // Проверка на окончание строки (CR+LF)
+        if (index > 0 && byte == '\n' && str[index - 1] == '\r') {
+            str[index - 1] = '\0'; // Заменяем CR на завершающий ноль
+            return; // Успешное чтение строки
         }
-        else if (index >= size) {
-            memmove(str, str + 1, size - 1);
-            str[size - 1] = byte;
-            index = size;
+        else if (index >= size - 1) {
+            // Если буфер почти заполнен, сдвигаем содержимое влево и добавляем новый байт
+            memmove(str, str + 1, size - 2);
+            str[size - 2] = byte;
+            str[size - 1] = '\0';
+            index = size - 1;
         }
         else {
+            // Добавляем байт в строку
             str[index++] = byte;
         }
     }
