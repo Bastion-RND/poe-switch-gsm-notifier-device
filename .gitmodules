@@ -1,0 +1,3 @@
+[submodule "lib/dio"]
+	path = lib/dio
+	url = git@github.com:Bastion-RND/MCU_Libraries_UserInterface.git
