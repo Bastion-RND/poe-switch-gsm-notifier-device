@@ -77,8 +77,9 @@ typedef struct Sim800Handle_ {
     struct {
         bool _mutex;
         uint32_t ts;
-        char *str;
+        char str[128];
         uint32_t timeout;
+        uint32_t attemptCounter;
         sim800_callback_t callback;
         void *callback_param;
     } Command;

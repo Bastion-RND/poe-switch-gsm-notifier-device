@@ -11,14 +11,17 @@
 
 #include "sim800_gsm_const.h"
 
+extern const char* AT;
 
 extern const char* RESPONSE_OK;
 extern const char* RESPONSE_ERROR;
 
-extern const char* RESPONSE_MODEL;
-extern const char* RESPONSE_SERIAL;
-extern const char* RESPONSE_REVISION;
+extern const char* REQUEST_SN;
+extern const char* REQUEST_REV;
+extern const char* REQUEST_MODEL;
+extern const char* REQUEST_RST_TO_DEF;
 
+extern const char* GET_SIM_STATE;
 extern const char* RESPONSE_PIN;
 
 extern const char* RESPONSE_RSSI;

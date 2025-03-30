@@ -1,6 +1,9 @@
 #include <string.h>
 
 #include "sim800_parser.h"
+
+#include <stdio.h>
+
 #include "sim800.h"
 
 #define PARSE_TIMEOUT	100 /* ms */
@@ -68,7 +71,7 @@ sim800_rx_ring_parser(Sim800Handle_t* p)
                         if (is_match(source, parser->str, parser->len))
                         {
                             match_found = true;
-                            debug_printf("Parse match: %s\n", parser->str);
+                            // debug_printf("Parse match: %s\n", parser->str);
                             if (parser->handler)
                                 parser->handler(Sim800Handle, source, parser->handler_param);
                         }
@@ -87,8 +90,12 @@ sim800_rx_ring_parser(Sim800Handle_t* p)
     if (sim800_is_locked(p)) {
         if ((SIM800_GET_TICK() - p->Command.ts) >= p->Command.timeout) {
             sim800_unlock(p);
-            trim_crlf(p->Command.str);
-            debug_printf("[SIM800] Warning: Cmd <%s> TIMEOUT!\n", p->Command.str);
+            #ifdef DEBUG
+            char tmp_buf[128];
+            snprintf(tmp_buf, sizeof(tmp_buf), p->Command.str);
+            trim_crlf(tmp_buf);
+            debug_printf("[SIM800] Warning: Cmd <%s> TIMEOUT!\n", tmp_buf);
+            #endif
             if (p->Command.callback) {
                 p->Command.callback(p, SIM800_EVENT_CMD_RESULT_TIMEOUT, p->Command.callback_param);
             }

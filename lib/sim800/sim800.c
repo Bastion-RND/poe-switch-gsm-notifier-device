@@ -2,6 +2,7 @@
 #include <string.h>
 
 #include "sim800.h"
+#include "sim800_const.h"
 
 static uint8_t tx_buf[64];
 static uint8_t rx_buf[256];
@@ -63,7 +64,7 @@ static Sim800Event_t send_string(Sim800Handle_t* p, char *str) {
 }
 
 static void ok_reply_handler(Sim800Handle_t* p, const char *str, void *param) {
-    debug_printf("[SIM800] OK reply handler has been called\n");
+    // debug_printf("[SIM800] OK reply handler has been called\n");
     sim800_unlock(p);
     if (p->Command.callback) {
         p->Command.callback(p, SIM800_EVENT_CMD_RESULT_OK, p->Command.callback_param);
@@ -71,7 +72,7 @@ static void ok_reply_handler(Sim800Handle_t* p, const char *str, void *param) {
 }
 
 static void error_reply_handler(Sim800Handle_t* p, const char *str, void *param) {
-    debug_printf("[SIM800] ERROR reply handler has been called\n");
+    // debug_printf("[SIM800] ERROR reply handler has been called\n");
     sim800_unlock(p);
     if (p->Command.callback) {
         p->Command.callback(p, SIM800_EVENT_CMD_RESULT_ERR, p->Command.callback_param);
@@ -131,7 +132,7 @@ static void sync_command_callback(Sim800Handle_t* p, Sim800Event_t event, void *
 static void switch_module_state(Sim800Handle_t* p, Sim800ModuleState_t NewState) {
     switch (NewState) {
         case SIM800_MODULE_STATE_UNDEFINED:
-            debug_printf("[SIM800 module] switch state to UNDEFINED\n");
+            debug_printf("[SIM800] switch state to UNDEFINED\n");
             sim800_parser_add(p, RESPONSE_OK, ok_reply_handler, NULL);
             sim800_parser_add(p, RESPONSE_ERROR, error_reply_handler, NULL);
             LL_USART_EnableIT_ERROR(USART2); // FIXME
@@ -143,30 +144,30 @@ static void switch_module_state(Sim800Handle_t* p, Sim800ModuleState_t NewState)
             break;
 
         case SIM800_MODULE_STATE_INITIALIZATION:
-            debug_printf("[SIM800 module] switch state to INITIALIZATION\n");
+            debug_printf("[SIM800] switch state to INITIALIZATION\n");
             sim800_parser_add(p, RESPONSE_PIN, cpin_parser, NULL);
-            sim800_parser_add(p, RESPONSE_MODEL, string_parser, p->Module.model);
-            sim800_parser_add(p, RESPONSE_SERIAL, string_parser, p->Module.serialNumber);
-            sim800_parser_add(p, RESPONSE_REVISION, string_parser, p->Module.revision);
+            sim800_parser_add(p, REQUEST_MODEL, string_parser, p->Module.model);
+            sim800_parser_add(p, REQUEST_SN, string_parser, p->Module.serialNumber);
+            sim800_parser_add(p, REQUEST_REV, string_parser, p->Module.revision);
             module_init_process(p, SIM800_EVENT_INITIALIZATION_BEGIN, NULL);
             break;
 
         case SIM800_MODULE_STATE_ERROR:
-            debug_printf("[SIM800 module] switch state to ERROR\n");
+            debug_printf("[SIM800] switch state to ERROR\n");
             p->Module.errorTimestamp = SIM800_GET_TICK();
             break;
 
         case SIM800_MODULE_STATE_READY:
-            debug_printf("[SIM800 module] switch state to READY\n");
+            debug_printf("[SIM800] switch state to READY\n");
             sim800_parser_remove(p, RESPONSE_PIN);
-            sim800_parser_remove(p, RESPONSE_MODEL);
-            sim800_parser_remove(p, RESPONSE_SERIAL);
-            sim800_parser_remove(p, RESPONSE_REVISION);
+            sim800_parser_remove(p, REQUEST_MODEL);
+            sim800_parser_remove(p, REQUEST_SN);
+            sim800_parser_remove(p, REQUEST_REV);
             sim800_parser_add(p, RESPONSE_RSSI, csq_parser, NULL);
             break;
 
         default:
-            debug_printf("[SIM800 module] switch state to UNKNOWN!\n");
+            debug_printf("[SIM800] switch state to UNKNOWN!\n");
             break;
     }
     p->Module.State = NewState;
@@ -180,14 +181,21 @@ static void module_init_process(Sim800Handle_t* p, Sim800Event_t event, void* pa
     switch (event) {
         case SIM800_EVENT_INITIALIZATION_BEGIN:
             stage = 0;
+            p->Command.attemptCounter = 0;
             break;
 
         case SIM800_EVENT_CMD_RESULT_ERR:
-            stage = -1;
+            p->Command.attemptCounter++;
+            if (p->Command.attemptCounter >= 20) {
+                stage = -1;
+            } else {
+                SIM800_DELAY_MS(1000);
+            }
             break;
 
         case SIM800_EVENT_CMD_RESULT_OK:
             stage++; /* switch to next step */
+            p->Command.attemptCounter = 0;
             break;
 
         default: /* retry last step */
@@ -197,31 +205,32 @@ static void module_init_process(Sim800Handle_t* p, Sim800Event_t event, void* pa
     switch (stage) {
         case 0:
             debug_printf("[SIM800] init stage 0: check module ready to proceed\n");
-            sim800_cmd(p, "AT\n", 1000, module_init_process, NULL, SIM800_FLOW_ASYNC);
+            sim800_cmd(p, AT, 1000, module_init_process, NULL, SIM800_FLOW_ASYNC);
             break;
 
         case 1:
-            debug_printf("[SIM800] init stage 1: get module model\n");
-            snprintf(str, sizeof(str), "AT+CGMM\n");
-            sim800_cmd(p, str, 1000, module_init_process, NULL, SIM800_FLOW_ASYNC);
+            debug_printf("[SIM800] init stage 1: reset settings\n");
+            sim800_cmd(p, REQUEST_RST_TO_DEF, 1000, module_init_process, NULL, SIM800_FLOW_ASYNC);
             break;
 
         case 2:
-            debug_printf("[SIM800] init stage 2: get module revision\n");
-            snprintf(str, sizeof(str), "AT+CGMR\n");
-            sim800_cmd(p, str, 1000, module_init_process, NULL, SIM800_FLOW_ASYNC);
+            debug_printf("[SIM800] init stage 2: get module model\n");
+            sim800_cmd(p, REQUEST_MODEL, 1000, module_init_process, NULL, SIM800_FLOW_ASYNC);
             break;
 
         case 3:
-            debug_printf("[SIM800] init stage 3: get module serial number\n");
-            snprintf(str, sizeof(str), "AT+CGSN\n");
-            sim800_cmd(p, str, 1000, module_init_process, NULL, SIM800_FLOW_ASYNC);
+            debug_printf("[SIM800] init stage 3: get module revision\n");
+            sim800_cmd(p, REQUEST_REV, 1000, module_init_process, NULL, SIM800_FLOW_ASYNC);
             break;
 
         case 4:
-            debug_printf("[SIM800] init stage 4: check SIM card is ready\n");
-            snprintf(str, sizeof(str), "AT+CPIN?\n");
-            sim800_cmd(p, str, 1000, module_init_process, NULL, SIM800_FLOW_ASYNC);
+            debug_printf("[SIM800] init stage 4: get module serial number\n");
+            sim800_cmd(p, REQUEST_SN, 1000, module_init_process, NULL, SIM800_FLOW_ASYNC);
+            break;
+
+        case 5:
+            debug_printf("[SIM800] init stage 5: check SIM card is ready\n");
+            sim800_cmd(p, GET_SIM_STATE, 1000, module_init_process, NULL, SIM800_FLOW_ASYNC);
             break;
 
         case -1:
@@ -375,12 +384,12 @@ bool sim800_parser_remove(Sim800Handle_t* p, const char *reply) {
     return false;
 }
 
-Sim800Result_t sim800_cmd(Sim800Handle_t* p, const char *cmd, uint32_t timeout,
+Sim800Result_t sim800_cmd(Sim800Handle_t* p, const char* cmd, uint32_t timeout,
                           sim800_callback_t cb, void *param,
                           sim800_Flow_t flow) {
     Sim800Result_t result = SIM800_RESULT_TIMEOUT;
     if (sim800_lock(p, timeout)) {
-        p->Command.str = (char *) cmd;
+        snprintf(p->Command.str, sizeof(p->Command.str), "%s", cmd);
         p->Command.timeout = timeout;
         p->Command.ts = SIM800_GET_TICK();
 
