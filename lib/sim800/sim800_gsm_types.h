@@ -123,7 +123,7 @@ typedef struct sim800GsmDtmf_ {
 
 } sim800GsmDtmf_t;
 
-typedef struct sim800Gsm_ {
+typedef struct Sim800GsmNetwork {
   struct {
     int mnc;
     int stat;
@@ -140,6 +140,6 @@ typedef struct sim800Gsm_ {
   sim800GsmState_t State;
   int balance;
 
-} sim800Gsm_t;
+} Sim800GsmNetwork_t;
 
 #endif /* SIM800_GSM_TYPES_H_ */

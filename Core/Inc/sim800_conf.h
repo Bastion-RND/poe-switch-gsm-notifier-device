@@ -19,6 +19,8 @@
 //#define SIM800_WITH_RTOS		1
 
 #define SIM800_DEFAULT_TIMEOUT	1000
+#define SIM800_COMMAND_TIMEOUT_MS		1000
+
 
 #if SIM800_WITH_RTOS
 #include "cmsis_os.h"

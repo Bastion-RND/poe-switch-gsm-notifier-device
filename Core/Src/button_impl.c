@@ -3,7 +3,7 @@
 
 #include "sim800.h"
 
-extern sim800_t* SIM800;
+extern Sim800Handle_t* Sim800Handle;
 
 /**
  * EXAMPLE for hardware button and pseudo button by STLED316S
@@ -42,11 +42,6 @@ button_get_input(Button_t *p)
   return (!b == p->Level);
 }
 
-
-static int right_button = 0;
-static int left_button = 0;
-
-
 uint32_t
 button_get_tick()
 {
@@ -58,7 +53,7 @@ button_pressed_long_callback(Button_t *p) {
   switch(p->id) {
   case BUTTON_SEND_SMS_ID:
   debug_printf("Try send SMS\n");
-  sim800_sms_send(SIM800, "+79094294096", "Hello");
+  sim800_sms_send(Sim800Handle, "+79094294096", "Hello");
     break;
   }
 }

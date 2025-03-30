@@ -32,7 +32,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-sim800_t* SIM800;
+Sim800Handle_t* Sim800Handle = NULL;
 Button_t user_button;
 /* USER CODE END PD */
 
@@ -95,7 +95,7 @@ int main(void)
   MX_GPIO_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
-  SIM800 = sim800_init(0);
+  Sim800Handle = sim800_init();
   user_button =	button_init(ButtonActiveLevel_HIGH, BUTTON_SEND_SMS_ID);
 
   /* USER CODE END 2 */
@@ -106,7 +106,7 @@ int main(void)
   {
     // debug_printf("Hello, world\n");
     // HAL_Delay(1000);
-    sim800_run(SIM800);
+    sim800_run(Sim800Handle);
     button_run(&user_button);
     /* USER CODE END WHILE */
 

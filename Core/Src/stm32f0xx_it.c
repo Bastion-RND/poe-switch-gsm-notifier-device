@@ -58,7 +58,7 @@
 /* External variables --------------------------------------------------------*/
 
 /* USER CODE BEGIN EV */
-extern sim800_t* 			SIM800;
+extern Sim800Handle_t* 			Sim800Handle;
 /* USER CODE END EV */
 
 /******************************************************************************/
@@ -147,7 +147,7 @@ void SysTick_Handler(void)
 void USART2_IRQHandler(void)
 {
   /* USER CODE BEGIN USART2_IRQn 0 */
-  sim800_uart_handler(SIM800);
+  sim800_uart_handler(Sim800Handle);
   /* USER CODE END USART2_IRQn 0 */
   /* USER CODE BEGIN USART2_IRQn 1 */
 

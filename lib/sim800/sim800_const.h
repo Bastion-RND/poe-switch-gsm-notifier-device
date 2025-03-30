@@ -10,7 +10,6 @@
 
 
 #include "sim800_gsm_const.h"
-#include "sim800_gprs_const.h"
 
 
 extern const char* RESPONSE_OK;

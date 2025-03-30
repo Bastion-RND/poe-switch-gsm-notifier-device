@@ -1,12 +1,3 @@
-/*
- * sim800_parser.c
- *
- *  Created on: Sep 25, 2021
- *      Author: sa100
- */
-
-//#include "Debug.h"
-
 #include <string.h>
 
 #include "sim800_parser.h"
@@ -15,38 +6,18 @@
 #define PARSE_TIMEOUT	100 /* ms */
 #define DELAY_TIMEOUT	  0 /* yield */
 
-///**
-// *
-// */
-//static bool
-//is_match(cbuf_handle_t cbuf, const char* str, size_t size)
-//{
-//    uint8_t byte;
-//
-//    if (cbuf && str)
-//    {
-//        /* zero bytes size compare is always match */
-//        if (size == 0) { return true; }
-//
-//        for (int i = 0; i < size; i++) {
-//            if (str[i] == SIM800_WILDCARD_CHR)
-//            {
-//                /* wildcard match any byte */
-//                continue;
-//            }
-//
-//            circular_buf_at(cbuf, i, &byte);
-//
-//            if ((char)byte != str[i])
-//            {
-//                /* does not match */
-//                return false;
-//            }
-//        }
-//        return true;
-//    }
-//    return false;
-//}
+extern Sim800Handle_t* Sim800Handle;
+
+static void trim_crlf(char *str) {
+    size_t len = strlen(str);
+    if (len > 0 && str[len - 1] == '\n') {
+        str[len - 1] = '\0';
+        len--;
+    }
+    if (len > 0 && str[len - 1] == '\r') {
+        str[len - 1] = '\0';
+    }
+}
 
 static bool
 is_match(const char* s1, const char* s2, size_t len)
@@ -72,7 +43,7 @@ is_match(const char* s1, const char* s2, size_t len)
  *
  */
 void
-sim800_rx_ring_parser(sim800_t* p)
+sim800_rx_ring_parser(Sim800Handle_t* p)
 {
     char source[512];
     bool match_found = false;
@@ -90,7 +61,7 @@ sim800_rx_ring_parser(sim800_t* p)
             } else {
                 for (int i = 0; i < SIM800_PARSERS_MAX; i++) {
                     /* Processing one of targets */
-                    sim800_Parser_t* parser = &p->Parser[i];
+                    Sim800Parser_t* parser = &p->ParsersList[i];
 
                     if (parser->str && parser->len)
                     {
@@ -99,7 +70,7 @@ sim800_rx_ring_parser(sim800_t* p)
                             match_found = true;
                             debug_printf("Parse match: %s\n", parser->str);
                             if (parser->handler)
-                                parser->handler(p, source, parser->handler_param);
+                                parser->handler(Sim800Handle, source, parser->handler_param);
                         }
                     }
                 }
@@ -116,22 +87,16 @@ sim800_rx_ring_parser(sim800_t* p)
     if (sim800_is_locked(p)) {
         if ((SIM800_GET_TICK() - p->Command.ts) >= p->Command.timeout) {
             sim800_unlock(p);
-            debug_printf("[SIM800] Warning: Cmd '%s' FINALIZE!\n", p->Command.str);
-
-            /* Finalize broken command */
+            trim_crlf(p->Command.str);
+            debug_printf("[SIM800] Warning: Cmd <%s> TIMEOUT!\n", p->Command.str);
             if (p->Command.callback) {
-                p->Command.callback(
-                    p, SIM800_EVENT_COMMAND_RESULT_TIMEOUT,
-                    p->Command.callback_param);
+                p->Command.callback(p, SIM800_EVENT_CMD_RESULT_TIMEOUT, p->Command.callback_param);
             }
         }
     }
 }
 
-/**
- *
- */
-void sim800_readline(sim800_t* p, char* str, size_t size, uint32_t timeout)
+void sim800_readline(Sim800Handle_t* p, char* str, size_t size, uint32_t timeout)
 {
     uint32_t ts = SIM800_GET_TICK(); // Получаем текущее время
 
@@ -140,24 +105,19 @@ void sim800_readline(sim800_t* p, char* str, size_t size, uint32_t timeout)
 
     for (;;) { // Бесконечный цикл для чтения данных
         while (circular_buf_get(p->RxCbufHandle, &byte) == (-1)) {
-            // Если буфер пуст, ждем некоторое время
             if ((SIM800_GET_TICK() - ts) < timeout) {
-                SIM800_DELAY_MS(DELAY_TIMEOUT); // Задержка перед повторным чтением
+                SIM800_DELAY_MS(DELAY_TIMEOUT);
             }
             else {
-                str[0] = '\0'; // Очищаем строку
-                return; // Таймаут истек, выходим из функции
+                str[0] = '\0';
+                return;
             }
         }
-
-        // Проверка на приглашение на отправку данных
         if (index == 1 && byte == ' ' && str[0] == '>') {
             str[1] = byte;
             str[2] = '\0';
             return; // Приглашение на отправку данных
         }
-
-        // Проверка на окончание строки (CR+LF)
         if (index > 0 && byte == '\n' && str[index - 1] == '\r') {
             str[index - 1] = '\0'; // Заменяем CR на завершающий ноль
             return; // Успешное чтение строки
@@ -170,7 +130,6 @@ void sim800_readline(sim800_t* p, char* str, size_t size, uint32_t timeout)
             index = size - 1;
         }
         else {
-            // Добавляем байт в строку
             str[index++] = byte;
         }
     }
@@ -378,7 +337,7 @@ sim800_parse_str(const char** pptr, char* str)
  *
  */
 void
-sim800_ip_addr_parse(sim800_t* p, void* param)
+sim800_ip_addr_parse(Sim800Handle_t* p, void* param)
 {
     uint8_t* u8 = (uint8_t*)param;
 
