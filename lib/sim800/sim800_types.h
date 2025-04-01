@@ -9,19 +9,16 @@
 
 #include "sim800_gsm_types.h"
 
-
 typedef enum sim800_Flow_ {
     SIM800_FLOW_ASYNC = 0U,
     SIM800_FLOW_SYNC = !SIM800_FLOW_ASYNC,
 } sim800_Flow_t;
-
 
 typedef enum Sim800Result_ {
     SIM800_RESULT_OK = 0,
     SIM800_RESULT_ERROR,
     SIM800_RESULT_TIMEOUT,
 } Sim800Result_t;
-
 
 typedef enum Sim800ModuleState_ {
     SIM800_MODULE_STATE_UNDEFINED = 0,
@@ -30,6 +27,15 @@ typedef enum Sim800ModuleState_ {
     SIM800_MODULE_STATE_READY,
     SIM800_MODULE_STATE_ERROR,
 } Sim800ModuleState_t;
+
+typedef enum Sim800State_ {
+    SIM800_STATE_UNDEFINED = 0,
+    SIM800_STATE_INIT_MODULE,
+    SIM800_INIT_GSM_NETWORK,
+    SIM800_INIT_SMS_LAYER,
+    SIM800_STATE_READY,
+    SIM800_STATE_ERROR,
+} Sim800State_t;
 
 typedef enum Sim800Event_ {
     SIM800_EVENT_CMD_RESULT_OK = 0,
@@ -54,7 +60,6 @@ typedef struct Sim800Parser_ {
     sim800_parser_handler_t handler;
     void *handler_param;
 } Sim800Parser_t;
-
 
 typedef struct sim800_TxBuffer_ {
     uint8_t *pData;
@@ -102,7 +107,7 @@ typedef struct Sim800Handle_ {
     cbuf_handle_t TxCbufHandle;
     cbuf_handle_t RxCbufHandle;
     Sim800Module_t Module;
-    Sim800GsmNetwork_t GsmNetwork;
+    Sim800Gsm_t Gsm;
     Sim800Parser_t* ParsersList;
 } Sim800Handle_t;
 

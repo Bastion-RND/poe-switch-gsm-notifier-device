@@ -1,6 +1,6 @@
 <mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 YaBrowser/25.2.0.0 Safari/537.36" version="26.2.2">
   <diagram name="Страница — 1" id="aZdFkAyM08SJH5c52DRS">
-    <mxGraphModel dx="2842" dy="1085" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+    <mxGraphModel dx="3640" dy="1526" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -356,7 +356,7 @@
         <mxCell id="vmu3JtosqAvPnkbs8oOj-105" value="" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
           <mxGeometry x="-680" y="410" width="260" height="140" as="geometry" />
         </mxCell>
-        <mxCell id="vmu3JtosqAvPnkbs8oOj-106" value="Сбросить модуль сигналом RESET" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+        <mxCell id="vmu3JtosqAvPnkbs8oOj-106" value="Подать питание и сбросить модуль сигналом RESET" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
           <mxGeometry x="-650" y="470" width="200" height="70" as="geometry" />
         </mxCell>
         <mxCell id="vmu3JtosqAvPnkbs8oOj-108" value="state = SIM800_MODULE_STATE_UNDEFINED" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
@@ -407,8 +407,8 @@
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="vmu3JtosqAvPnkbs8oOj-121" value="SIM800 module init process" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=32;" vertex="1" parent="1">
-          <mxGeometry x="-400" y="-10" width="660" height="30" as="geometry" />
+        <mxCell id="vmu3JtosqAvPnkbs8oOj-121" value="SIM800 module init and workflow process" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=32;" vertex="1" parent="1">
+          <mxGeometry x="-400" y="-40" width="660" height="30" as="geometry" />
         </mxCell>
         <mxCell id="vmu3JtosqAvPnkbs8oOj-122" value="" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
           <mxGeometry x="-1180" y="380" width="380" height="180" as="geometry" />
@@ -510,6 +510,18 @@
         </mxCell>
         <mxCell id="vmu3JtosqAvPnkbs8oOj-144" value="GSM LVL IS OK?" style="rhombus;whiteSpace=wrap;html=1;" vertex="1" parent="1">
           <mxGeometry x="-1240" y="1000" width="120" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="vmu3JtosqAvPnkbs8oOj-151" value="Диаграмма показывает, как инициализируется и реанициализируется модуль, а также машину состояний его работы. В состоянии READY модуль готов к дальнейшей работе (инициализация GSM, SMS, etc)" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;" vertex="1" parent="1">
+          <mxGeometry x="-290" width="440" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="vmu3JtosqAvPnkbs8oOj-152" value="В этом состоянии можно инициализировать&amp;nbsp; протоколы верхних уровней (GSM, SMS, etc)" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="-1440" y="845" width="150" height="115" as="geometry" />
+        </mxCell>
+        <mxCell id="vmu3JtosqAvPnkbs8oOj-154" value="" style="endArrow=classic;html=1;rounded=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;exitX=1;exitY=0.75;exitDx=0;exitDy=0;dashed=1;dashPattern=8 8;" edge="1" parent="1" source="vmu3JtosqAvPnkbs8oOj-152" target="vmu3JtosqAvPnkbs8oOj-134">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="-840" y="800" as="sourcePoint" />
+            <mxPoint x="-790" y="750" as="targetPoint" />
+          </mxGeometry>
         </mxCell>
       </root>
     </mxGraphModel>
