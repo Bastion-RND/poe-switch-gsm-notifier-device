@@ -13,6 +13,14 @@
 
 #include "sim800_gsm.h"
 
+#ifndef CMD_MAX_ATTEMPT
+#define CMD_MAX_ATTEMPT 20
+#endif
+
+#ifndef REPEAT_CMD_TIMEOUT_MS
+#define REPEAT_CMD_TIMEOUT_MS 1000
+#endif
+
 Sim800Handle_t* sim800_init(void);
 // void sim800_restart(void);
 // void sim800_reset(void);

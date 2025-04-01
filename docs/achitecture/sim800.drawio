@@ -1,0 +1,232 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 YaBrowser/25.2.0.0 Safari/537.36" version="26.0.15">
+  <diagram name="Страница — 1" id="aZdFkAyM08SJH5c52DRS">
+    <mxGraphModel dx="1834" dy="1183" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="qgaMM7tw9P_MyHmQAtMh-1" value="Start" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="310" y="-50" width="70" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="qgaMM7tw9P_MyHmQAtMh-3" value="Отправить АТ команду (установка связи с модулем, настройка baudrate)&lt;div&gt;callback = self&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="230" y="310" width="210" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="qgaMM7tw9P_MyHmQAtMh-4" value="Сбросить модуль сигналом RESET" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="285" y="40" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="qgaMM7tw9P_MyHmQAtMh-7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="qgaMM7tw9P_MyHmQAtMh-5" target="qgaMM7tw9P_MyHmQAtMh-6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="qgaMM7tw9P_MyHmQAtMh-8" value="no" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="qgaMM7tw9P_MyHmQAtMh-7">
+          <mxGeometry x="-0.8812" y="2" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="qgaMM7tw9P_MyHmQAtMh-5" value="OK?" style="rhombus;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="300" y="400" width="90" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="qgaMM7tw9P_MyHmQAtMh-9" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="qgaMM7tw9P_MyHmQAtMh-6" target="qgaMM7tw9P_MyHmQAtMh-4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="qgaMM7tw9P_MyHmQAtMh-6" value="Пауза 1 секунда" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="80" y="40" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="qgaMM7tw9P_MyHmQAtMh-10" value="Отправить АТ&amp;amp;F0 команду (сброс настроек модуля)" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="280" y="480" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="qgaMM7tw9P_MyHmQAtMh-12" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" edge="1" parent="1" source="qgaMM7tw9P_MyHmQAtMh-11">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="140" y="420" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="qgaMM7tw9P_MyHmQAtMh-13" value="no" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="qgaMM7tw9P_MyHmQAtMh-12">
+          <mxGeometry x="-0.8767" y="4" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="qgaMM7tw9P_MyHmQAtMh-11" value="OK?" style="rhombus;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="295" y="570" width="90" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="qgaMM7tw9P_MyHmQAtMh-14" value="Отправить AT+CGMM&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;&amp;nbsp;команду (узнать модель SIM-модуля)&lt;/span&gt;" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="285" y="640" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="qgaMM7tw9P_MyHmQAtMh-16" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" edge="1" parent="1" source="qgaMM7tw9P_MyHmQAtMh-15">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="140" y="590" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="qgaMM7tw9P_MyHmQAtMh-17" value="no" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="qgaMM7tw9P_MyHmQAtMh-16">
+          <mxGeometry x="-0.8792" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="qgaMM7tw9P_MyHmQAtMh-15" value="OK?" style="rhombus;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="295" y="730" width="90" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="qgaMM7tw9P_MyHmQAtMh-18" value="Отправить AT+CGMR&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;&amp;nbsp;команду (узнать ревизию SIM-модуля)&lt;/span&gt;" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="280" y="800" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="qgaMM7tw9P_MyHmQAtMh-20" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" edge="1" parent="1" source="qgaMM7tw9P_MyHmQAtMh-19">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="140" y="750" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="qgaMM7tw9P_MyHmQAtMh-21" value="no" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="qgaMM7tw9P_MyHmQAtMh-20">
+          <mxGeometry x="-0.8227" y="4" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="qgaMM7tw9P_MyHmQAtMh-19" value="OK?" style="rhombus;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="295" y="880" width="90" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="qgaMM7tw9P_MyHmQAtMh-22" value="Отправить AT+CGSN&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;&amp;nbsp;команду (узнать серийный номер&amp;nbsp;SIM-модуля)&lt;/span&gt;" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="280" y="950" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="qgaMM7tw9P_MyHmQAtMh-24" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" edge="1" parent="1" source="qgaMM7tw9P_MyHmQAtMh-23">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="140" y="900" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="qgaMM7tw9P_MyHmQAtMh-25" value="no" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="qgaMM7tw9P_MyHmQAtMh-24">
+          <mxGeometry x="-0.7965" y="-1" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="qgaMM7tw9P_MyHmQAtMh-23" value="OK?" style="rhombus;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="295" y="1040" width="90" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="qgaMM7tw9P_MyHmQAtMh-26" value="Отправить AT+CPIN?&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;&amp;nbsp;команду (узнать статус SIM-карты)&lt;/span&gt;" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="290" y="1320" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="qgaMM7tw9P_MyHmQAtMh-33" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" edge="1" parent="1" source="qgaMM7tw9P_MyHmQAtMh-27">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="510" y="1410" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="qgaMM7tw9P_MyHmQAtMh-34" value="no" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="qgaMM7tw9P_MyHmQAtMh-33">
+          <mxGeometry x="-0.7318" relative="1" as="geometry">
+            <mxPoint x="1" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="qgaMM7tw9P_MyHmQAtMh-27" value="READY?" style="rhombus;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="297.5" y="1390" width="90" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="qgaMM7tw9P_MyHmQAtMh-28" value="счётчик повторений = 30" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="275" y="1110" width="145" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="qgaMM7tw9P_MyHmQAtMh-30" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" edge="1" parent="1" source="qgaMM7tw9P_MyHmQAtMh-29">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="140" y="1060" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="qgaMM7tw9P_MyHmQAtMh-31" value="yes" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="qgaMM7tw9P_MyHmQAtMh-30">
+          <mxGeometry x="-0.8264" y="1" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="qgaMM7tw9P_MyHmQAtMh-29" value="счётчик&lt;div&gt;повторений&amp;nbsp;&lt;/div&gt;&lt;div&gt;&amp;lt;= 0?&lt;/div&gt;" style="rhombus;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="280" y="1180" width="130" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="qgaMM7tw9P_MyHmQAtMh-38" value="счётчик&lt;div&gt;повторений - -&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="285" y="1270" width="120" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="qgaMM7tw9P_MyHmQAtMh-39" value="state = SIM800_READY" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="280" y="1450" width="120" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="qgaMM7tw9P_MyHmQAtMh-40" value="End" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="295" y="1510" width="70" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="qgaMM7tw9P_MyHmQAtMh-41" value="SIM800_MODULE_STATE_UNDEFINED" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="530" y="10" width="260" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="qgaMM7tw9P_MyHmQAtMh-42" value="SIM800_MODULE_STATE_INIT_BEGIN" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="530" y="280" width="260" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="qgaMM7tw9P_MyHmQAtMh-46" value="SIM800_MODULE_STATE_READY" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="520" y="1490" width="260" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="qgaMM7tw9P_MyHmQAtMh-48" value="" style="endArrow=classic;html=1;rounded=0;dashed=1;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="440" y="390" as="sourcePoint" />
+            <mxPoint x="380" y="410" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="qgaMM7tw9P_MyHmQAtMh-49" value="callback" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="440" y="370" width="75" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="qgaMM7tw9P_MyHmQAtMh-50" value="" style="endArrow=classic;html=1;rounded=0;dashed=1;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="440" y="560" as="sourcePoint" />
+            <mxPoint x="380" y="580" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="qgaMM7tw9P_MyHmQAtMh-51" value="callback" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="440" y="540" width="75" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="qgaMM7tw9P_MyHmQAtMh-52" value="" style="endArrow=classic;html=1;rounded=0;dashed=1;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="430" y="720" as="sourcePoint" />
+            <mxPoint x="370" y="740" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="qgaMM7tw9P_MyHmQAtMh-53" value="callback" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="430" y="700" width="75" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="qgaMM7tw9P_MyHmQAtMh-54" value="" style="endArrow=classic;html=1;rounded=0;dashed=1;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="430" y="870" as="sourcePoint" />
+            <mxPoint x="370" y="890" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="qgaMM7tw9P_MyHmQAtMh-55" value="callback" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="430" y="850" width="75" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="qgaMM7tw9P_MyHmQAtMh-56" value="" style="endArrow=classic;html=1;rounded=0;dashed=1;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="430" y="1030" as="sourcePoint" />
+            <mxPoint x="370" y="1050" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="qgaMM7tw9P_MyHmQAtMh-57" value="callback" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="430" y="1010" width="75" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="qgaMM7tw9P_MyHmQAtMh-58" value="" style="endArrow=classic;html=1;rounded=0;dashed=1;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="220" y="1380" as="sourcePoint" />
+            <mxPoint x="290" y="1400" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="qgaMM7tw9P_MyHmQAtMh-59" value="callback" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="160" y="1350" width="75" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="qgaMM7tw9P_MyHmQAtMh-60" value="SIM800_MODULE_STATE_ERROR" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="-70" y="300" width="200" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="qgaMM7tw9P_MyHmQAtMh-66" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="qgaMM7tw9P_MyHmQAtMh-62" target="qgaMM7tw9P_MyHmQAtMh-65">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="qgaMM7tw9P_MyHmQAtMh-67" value="no" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="qgaMM7tw9P_MyHmQAtMh-66">
+          <mxGeometry x="-0.4545" y="-2" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="qgaMM7tw9P_MyHmQAtMh-62" value="timeout = 0?" style="rhombus;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="295" y="150" width="90" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="qgaMM7tw9P_MyHmQAtMh-63" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.543;entryY=-0.05;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="1" source="qgaMM7tw9P_MyHmQAtMh-62" target="qgaMM7tw9P_MyHmQAtMh-3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="qgaMM7tw9P_MyHmQAtMh-64" value="yes" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="qgaMM7tw9P_MyHmQAtMh-63">
+          <mxGeometry x="-0.5868" y="1" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="qgaMM7tw9P_MyHmQAtMh-65" value="elapsed time&lt;div&gt;&amp;gt;=&amp;nbsp;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;timeout?&lt;/span&gt;&lt;/div&gt;" style="rhombus;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="440" y="135" width="170" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="qgaMM7tw9P_MyHmQAtMh-68" value="Добавить таймер на 1 секунду,&lt;div&gt;callback = self&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="515" y="1380" width="120" height="60" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

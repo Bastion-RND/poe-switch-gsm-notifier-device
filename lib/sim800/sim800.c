@@ -9,15 +9,22 @@ static uint8_t rx_buf[256];
 
 static Sim800Parser_t ParsersList[SIM800_PARSERS_MAX];
 
-// FIXME
-static volatile struct {
-    volatile uint32_t fe;
-    volatile uint32_t pe;
-    volatile uint32_t overrun;
-} UartErrorStat;
-
 static void switch_module_state(Sim800Handle_t* p, Sim800ModuleState_t);
 static void module_init_process(Sim800Handle_t *p, Sim800Event_t, void* param);
+
+void sim800_timer_start(Sim800Handle_t* p, uint32_t period_ms, sim800_callback_t cb) {
+    p->Module.Timer.timeout_ms = period_ms;
+    p->Module.Timer.callback = cb;
+    p->Module.Timer.timestamp = SIM800_GET_TICK();
+    p->Module.Timer.active = true;
+}
+
+static void sim800_restart(Sim800Handle_t *p, Sim800Event_t event, void* param) {
+    (void)param;
+    SIM800_POWER_OFF();
+    SIM800_DELAY_MS(100);
+    switch_module_state(p, SIM800_MODULE_STATE_UNDEFINED);
+}
 
 static bool sim800_lock(Sim800Handle_t* p, const uint32_t timeout) {
     uint32_t ts = SIM800_GET_TICK();
@@ -82,9 +89,12 @@ static void error_reply_handler(Sim800Handle_t* p, const char *str, void *param)
 static void cpin_parser(Sim800Handle_t* p, const char *str, void *param) {
     const size_t offset = strlen(RESPONSE_PIN);
 
-    if (strcmp(str + offset, "READY") /* does NOT match */) {
-        switch_module_state(p, SIM800_MODULE_STATE_ERROR);
+    if (strcmp(str + offset, "READY") == 0) {
+        p->Module.SimCardState = SIM800_SIM_CARD_READY;
+    } else {
+        p->Module.SimCardState = SIM800_SIM_CARD_UNDEFINED;
     }
+
     on_pin_checked_callback(str + offset);
 }
 
@@ -133,6 +143,8 @@ static void switch_module_state(Sim800Handle_t* p, Sim800ModuleState_t NewState)
     switch (NewState) {
         case SIM800_MODULE_STATE_UNDEFINED:
             debug_printf("[SIM800] switch state to UNDEFINED\n");
+            SIM800_POWER_ON();
+            HAL_Delay(500);
             sim800_parser_add(p, RESPONSE_OK, ok_reply_handler, NULL);
             sim800_parser_add(p, RESPONSE_ERROR, error_reply_handler, NULL);
             LL_USART_EnableIT_ERROR(USART2); // FIXME
@@ -140,7 +152,6 @@ static void switch_module_state(Sim800Handle_t* p, Sim800ModuleState_t NewState)
             HAL_GPIO_WritePin(SIM800_RESET_GPIO_Port, SIM800_RESET_Pin, GPIO_PIN_SET);
             HAL_Delay(1000);
             HAL_GPIO_WritePin(SIM800_RESET_GPIO_Port, SIM800_RESET_Pin, GPIO_PIN_RESET);
-        // FIXME: SIM800_POWER_ON();
             break;
 
         case SIM800_MODULE_STATE_INITIALIZATION:
@@ -154,7 +165,7 @@ static void switch_module_state(Sim800Handle_t* p, Sim800ModuleState_t NewState)
 
         case SIM800_MODULE_STATE_ERROR:
             debug_printf("[SIM800] switch state to ERROR\n");
-            p->Module.errorTimestamp = SIM800_GET_TICK();
+            sim800_timer_start(p, 10000, sim800_restart);
             break;
 
         case SIM800_MODULE_STATE_READY:
@@ -174,9 +185,8 @@ static void switch_module_state(Sim800Handle_t* p, Sim800ModuleState_t NewState)
 }
 
 static void module_init_process(Sim800Handle_t* p, Sim800Event_t event, void* param) {
-    debug_printf("[SIM800] module init process called\n");
+    (void)param;
     static int stage;
-    char str[128];
 
     switch (event) {
         case SIM800_EVENT_INITIALIZATION_BEGIN:
@@ -185,11 +195,14 @@ static void module_init_process(Sim800Handle_t* p, Sim800Event_t event, void* pa
             break;
 
         case SIM800_EVENT_CMD_RESULT_ERR:
+            sim800_timer_start(p, REPEAT_CMD_TIMEOUT_MS, module_init_process);
+            break;
+
+        case SIM800_EVENT_TIMER_REACHED:
+        case SIM800_EVENT_CMD_RESULT_TIMEOUT:
             p->Command.attemptCounter++;
-            if (p->Command.attemptCounter >= 20) {
-                stage = -1;
-            } else {
-                SIM800_DELAY_MS(1000);
+            if (p->Command.attemptCounter >= CMD_MAX_ATTEMPT) {
+                switch_module_state(p, SIM800_MODULE_STATE_ERROR);
             }
             break;
 
@@ -198,49 +211,51 @@ static void module_init_process(Sim800Handle_t* p, Sim800Event_t event, void* pa
             p->Command.attemptCounter = 0;
             break;
 
-        default: /* retry last step */
-            break;
+        default:
+            return;
     }
 
-    switch (stage) {
-        case 0:
-            debug_printf("[SIM800] init stage 0: check module ready to proceed\n");
+    if (p->Module.Timer.active || p->Module.State == SIM800_MODULE_STATE_ERROR) {return;}
+
+    if (p->Module.State == SIM800_MODULE_STATE_INITIALIZATION || p->Module.State == SIM800_MODULE_STATE_UNDEFINED) {
+        switch (stage) {
+            case 0:
+                debug_printf("[SIM800] init stage 0: check module ready to proceed\n");
             sim800_cmd(p, AT, 1000, module_init_process, NULL, SIM800_FLOW_ASYNC);
             break;
 
-        case 1:
-            debug_printf("[SIM800] init stage 1: reset settings\n");
+            case 1:
+                debug_printf("[SIM800] init stage 1: reset settings\n");
             sim800_cmd(p, REQUEST_RST_TO_DEF, 1000, module_init_process, NULL, SIM800_FLOW_ASYNC);
             break;
 
-        case 2:
-            debug_printf("[SIM800] init stage 2: get module model\n");
+            case 2:
+                debug_printf("[SIM800] init stage 2: get module model\n");
             sim800_cmd(p, REQUEST_MODEL, 1000, module_init_process, NULL, SIM800_FLOW_ASYNC);
             break;
 
-        case 3:
-            debug_printf("[SIM800] init stage 3: get module revision\n");
+            case 3:
+                debug_printf("[SIM800] init stage 3: get module revision\n");
             sim800_cmd(p, REQUEST_REV, 1000, module_init_process, NULL, SIM800_FLOW_ASYNC);
             break;
 
-        case 4:
-            debug_printf("[SIM800] init stage 4: get module serial number\n");
+            case 4:
+                debug_printf("[SIM800] init stage 4: get module serial number\n");
             sim800_cmd(p, REQUEST_SN, 1000, module_init_process, NULL, SIM800_FLOW_ASYNC);
             break;
 
-        case 5:
-            debug_printf("[SIM800] init stage 5: check SIM card is ready\n");
+            case 5:
+                debug_printf("[SIM800] init stage 5: check SIM card is ready\n");
             sim800_cmd(p, GET_SIM_STATE, 1000, module_init_process, NULL, SIM800_FLOW_ASYNC);
             break;
 
-        case -1:
-            switch_module_state(p, SIM800_MODULE_STATE_ERROR);
-            break;
-
-        default:
-            if (p->Module.State == SIM800_MODULE_STATE_INITIALIZATION) {
-                switch_module_state(p, SIM800_MODULE_STATE_READY);
-            }
+            default:
+                if (p->Module.SimCardState == SIM800_SIM_CARD_READY) {
+                    switch_module_state(p, SIM800_MODULE_STATE_READY);
+                } else {
+                    switch_module_state(p, SIM800_MODULE_STATE_ERROR);
+                }
+        }
     }
 }
 
@@ -250,6 +265,8 @@ Sim800Handle_t *sim800_init(void) {
     p->TxCbufHandle = circular_buf_init(tx_buf, sizeof(tx_buf));
     p->RxCbufHandle = circular_buf_init(rx_buf, sizeof(rx_buf));
     p->ParsersList = ParsersList;
+    p->Module.Timer.callback = NULL;
+    p->Module.Timer.timeout_ms = 0;
     switch_module_state(p, SIM800_MODULE_STATE_UNDEFINED);
     return p;
 }
@@ -261,22 +278,27 @@ void sim800_run(Sim800Handle_t* p) {
 
     sim800_rx_ring_parser();
 
+    if (p->Module.Timer.active) {
+        uint32_t now = SIM800_GET_TICK();
+        if (now - p->Module.Timer.timestamp >= p->Module.Timer.timeout_ms) {
+            p->Module.Timer.active = false;
+            if (p->Module.Timer.callback) {
+                p->Module.Timer.callback(p, SIM800_EVENT_TIMER_REACHED, NULL);
+            }
+        }
+    }
+
     switch (p->Module.State) {
         case SIM800_MODULE_STATE_UNDEFINED:
             switch_module_state(p, SIM800_MODULE_STATE_INITIALIZATION);
             break;
 
-        case SIM800_MODULE_STATE_INITIALIZATION:
-            break;
-
-        case SIM800_MODULE_STATE_ERROR:
-            if ((SIM800_GET_TICK() - p->Module.errorTimestamp) >= 10 * 1000) {
-                switch_module_state(p, SIM800_MODULE_STATE_UNDEFINED); /* restart */
-            }
+        case SIM800_MODULE_STATE_INITIALIZATION: /* init event-driven process */
+        case SIM800_MODULE_STATE_ERROR: /* event-driven by timer */
             break;
 
         case SIM800_MODULE_STATE_READY:
-            sim800_gsm_run(p);
+            // sim800_gsm_run(p);
 
             if (!sim800_is_locked(p)) {
                 if ((SIM800_GET_TICK() - ts_every_second) >= 1 * 1000) {
@@ -325,26 +347,16 @@ void sim800_uart_handler(Sim800Handle_t* p) {
     }
     if (LL_USART_IsActiveFlag_FE(SIM800_USART)) {
         LL_USART_ClearFlag_FE(SIM800_USART);
-        UartErrorStat.fe++;
     }
     if (LL_USART_IsActiveFlag_PE(SIM800_USART)) {
         LL_USART_ClearFlag_PE(SIM800_USART);
-        UartErrorStat.pe++;
     }
     if (LL_USART_IsActiveFlag_ORE(SIM800_USART)) {
         LL_USART_ClearFlag_ORE(SIM800_USART);
-        UartErrorStat.overrun++;
     }
     if (LL_USART_IsActiveFlag_NE(SIM800_USART)) {
         LL_USART_ClearFlag_NE(SIM800_USART);
-        UartErrorStat.fe++;
     }
-}
-
-void sim800_restart() {
-    SIM800_POWER_OFF();
-    SIM800_DELAY_MS(100);
-    sim800_init();
 }
 
 bool sim800_parser_add(Sim800Handle_t* p, const char *reply,
