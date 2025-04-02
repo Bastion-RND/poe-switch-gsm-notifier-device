@@ -23,6 +23,7 @@
 /* USER CODE BEGIN Includes */
 #include "sim800.h"
 #include "button.h"
+#include "utf8_xcoder.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -97,6 +98,20 @@ int main(void)
   /* USER CODE BEGIN 2 */
   Sim800Handle = sim800_init();
   user_button =	button_init(ButtonActiveLevel_HIGH, BUTTON_SEND_SMS_ID);
+  char* t = "0048";
+  char* endptr;
+
+  char buf[4];
+  int *code_points = "0048";  // The end is marked by a zero value.
+  int *code_point_cursor = code_points;  // Copy of the base pointer so we can move this one around.
+  char *utf8_bytes = &buf[0];
+  char *end_byte = utf8_bytes + 4;
+
+  do {
+       encode_code_point(&utf8_bytes, end_byte, *code_point_cursor++);
+  } while (*(code_point_cursor - 1));
+
+  debug_printf("0048 -> %s",utf8_bytes);
 
   /* USER CODE END 2 */
 

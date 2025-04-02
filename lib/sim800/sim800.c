@@ -3,6 +3,7 @@
 
 #include "sim800.h"
 #include "sim800_const.h"
+#include "utf8_xcoder.h"
 
 static uint8_t tx_buf[64];
 static uint8_t rx_buf[256];
@@ -89,13 +90,50 @@ static void error_reply_handler(Sim800Handle_t* p, const char *str, void *param)
 static void cpin_parser(Sim800Handle_t* p, const char *str, void *param) {
     const size_t offset = strlen(RESPONSE_PIN);
 
-    if (strcmp(str + offset, "READY") == 0) {
-        p->Module.SimCardState = SIM800_SIM_CARD_READY;
-    } else {
-        p->Module.SimCardState = SIM800_SIM_CARD_UNDEFINED;
+    if (strcmp(str + offset, "READY") != 0) {
+        switch_module_state(p, SIM800_MODULE_STATE_ERROR);
     }
-
     on_pin_checked_callback(str + offset);
+}
+
+static void creg_parser(Sim800Handle_t *p, const char *str, void *param) {
+    const char *ptr = str + strlen("+CREG: ");
+    debug_printf("[%s] %s", __func__, str);
+
+    // '+CREG: 1,"66C6","0638"\r\n'
+    // TODO: hex parser
+
+    p->Gsm.Network.stat = sim800_parse_int(&ptr);
+    ptr += 2; /* skip [ ," ] */
+
+    sim800_parse_str(&ptr, &p->Gsm.Network.lac[0]);
+    ptr += 3; /* skip [ "," ] */
+
+    sim800_parse_str(&ptr, &p->Gsm.Network.ci[0]);
+
+    if (p->Gsm.Network.stat == 1) {
+        switch_module_state(p, SIM800_MODULE_STATE_READY);
+    } else {
+        switch_module_state(p, SIM800_MODULE_STATE_NOT_REGISTERED);
+    }
+}
+
+static void cops_parser(Sim800Handle_t *p, const char *str, void *param) {
+    const char *ptr = str + strlen(RESPONSE_GSM_OPERATOR);
+    int num;
+
+    // '+COPS: 0,2,"25099"'
+
+    num = sim800_parse_int(&ptr); // <mode>
+    ptr += 1;                     /* skip [ , ] */
+
+    num = sim800_parse_int(&ptr); // <format>
+    ptr += 2;                     /* skip [ ," ] */
+
+    p->Gsm.Network.mnc = sim800_parse_int(&ptr);
+    ptr += 1; /* skip [ , ] */
+
+    sim800_parser_remove(p, RESPONSE_GSM_OPERATOR);
 }
 
 static void csq_parser(Sim800Handle_t* p, const char *str, void *param) {
@@ -114,6 +152,44 @@ static void csq_parser(Sim800Handle_t* p, const char *str, void *param) {
         p->Module.RSSI.dBm = 0;
     }
     on_rssi_updated_callback(p->Module.RSSI.dBm);
+}
+
+static void cmt_parser(Sim800Handle_t* p, const char *str, void *param) {
+    uint8_t raw_msg[280 + 1]; /* (140 byte * 2 char/byte) + \0 */
+    uint8_t text_msg[70];
+    sim800_readline(p, raw_msg, sizeof(raw_msg), 1000);
+    uint8_t* ptr = &raw_msg[0];
+    uint8_t* textPtr = &text_msg[0];
+    debug_printf("Header SMS raw: %s\n", str);
+
+    int counter = (int)strlen(raw_msg);
+
+    while (counter) {
+        int code_point = str_to_code_point(&ptr);
+        if (code_point < 0) {
+          debug_printf("Error decoding code point\n");
+          break;
+        }
+        counter -= 4;
+        // Преобразуем кодовый пункт в символы UTF-16LE и выводим
+        // В UTF-16LE младший байт идет первым, поэтому меняем порядок байтов
+        char utf16_char[2];
+        utf16_char[0] = (code_point >> 0) & 0xFF;  // Младший байт
+        utf16_char[1] = (code_point >> 8) & 0xFF; // Старший байт
+
+        // Выводим символы
+        debug_printf("%c%c", utf16_char[0], utf16_char[1]);
+
+        textPtr++;
+    }
+    debug_printf("\n");
+    switch_gsm_state(p, SIM800_GSM_STATE_READY);
+}
+
+static void sms_ready_parser(Sim800Handle_t *p, const char *str, void *param) {
+    (void)param;
+    p->Gsm.Sms.State = SIM800_SMS_STATE_IDLE;
+    debug_printf("[%s] %s\n", __func__, str);
 }
 
 static void string_parser(Sim800Handle_t* p, const char *str, void *param) {
@@ -160,12 +236,19 @@ static void switch_module_state(Sim800Handle_t* p, Sim800ModuleState_t NewState)
             sim800_parser_add(p, REQUEST_MODEL, string_parser, p->Module.model);
             sim800_parser_add(p, REQUEST_SN, string_parser, p->Module.serialNumber);
             sim800_parser_add(p, REQUEST_REV, string_parser, p->Module.revision);
+            sim800_parser_add(p, "+CREG: ", creg_parser, NULL);
+            sim800_parser_add(p, "SMS Ready", sms_ready_parser, NULL);
             module_init_process(p, SIM800_EVENT_INITIALIZATION_BEGIN, NULL);
             break;
 
         case SIM800_MODULE_STATE_ERROR:
             debug_printf("[SIM800] switch state to ERROR\n");
+            p->Gsm.Sms.State = SIM800_SMS_STATE_UNDEFINED;
             sim800_timer_start(p, 10000, sim800_restart);
+            break;
+
+        case SIM800_MODULE_STATE_NOT_REGISTERED:
+            debug_printf("[SIM800] switch state to NOT_REGISTERED\n");
             break;
 
         case SIM800_MODULE_STATE_READY:
@@ -175,7 +258,6 @@ static void switch_module_state(Sim800Handle_t* p, Sim800ModuleState_t NewState)
             sim800_parser_remove(p, REQUEST_SN);
             sim800_parser_remove(p, REQUEST_REV);
             sim800_parser_add(p, RESPONSE_RSSI, csq_parser, NULL);
-            sim800_gsm_network_restart(p);
             break;
 
         default:
@@ -221,41 +303,72 @@ static void module_init_process(Sim800Handle_t* p, Sim800Event_t event, void* pa
     if (p->Module.State == SIM800_MODULE_STATE_INITIALIZATION || p->Module.State == SIM800_MODULE_STATE_UNDEFINED) {
         switch (stage) {
             case 0:
-                debug_printf("[SIM800] init stage 0: check module ready to proceed\n");
+                debug_printf("[SIM800] init stage: check module ready to proceed\n");
             sim800_cmd(p, AT, 1000, module_init_process, NULL, SIM800_FLOW_ASYNC);
             break;
 
             case 1:
-                debug_printf("[SIM800] init stage 1: reset settings\n");
+                debug_printf("[SIM800] init stage: reset settings\n");
             sim800_cmd(p, REQUEST_RST_TO_DEF, 1000, module_init_process, NULL, SIM800_FLOW_ASYNC);
             break;
 
             case 2:
-                debug_printf("[SIM800] init stage 2: get module model\n");
-            sim800_cmd(p, REQUEST_MODEL, 1000, module_init_process, NULL, SIM800_FLOW_ASYNC);
+            debug_printf("[SIM800] init stage: echo off\n");
+            sim800_cmd(p, "ATE0\n", 1000, module_init_process, NULL, SIM800_FLOW_ASYNC);
             break;
 
             case 3:
-                debug_printf("[SIM800] init stage 3: get module revision\n");
-            sim800_cmd(p, REQUEST_REV, 1000, module_init_process, NULL, SIM800_FLOW_ASYNC);
+                debug_printf("[SIM800] init stage: get module model\n");
+            sim800_cmd(p, REQUEST_MODEL, 1000, module_init_process, NULL, SIM800_FLOW_ASYNC);
             break;
 
             case 4:
-                debug_printf("[SIM800] init stage 4: get module serial number\n");
-            sim800_cmd(p, REQUEST_SN, 1000, module_init_process, NULL, SIM800_FLOW_ASYNC);
+                debug_printf("[SIM800] init stage: get module revision\n");
+            sim800_cmd(p, REQUEST_REV, 1000, module_init_process, NULL, SIM800_FLOW_ASYNC);
             break;
 
             case 5:
-                debug_printf("[SIM800] init stage 5: check SIM card is ready\n");
-            sim800_cmd(p, GET_SIM_STATE, 1000, module_init_process, NULL, SIM800_FLOW_ASYNC);
+                debug_printf("[SIM800] init stage: get module serial number\n");
+            sim800_cmd(p, REQUEST_SN, 1000, module_init_process, NULL, SIM800_FLOW_ASYNC);
+            break;
+
+            case 6:
+                debug_printf("[SIM800] init stage: check SIM card is ready\n");
+                sim800_cmd(p, GET_SIM_STATE, 1000, module_init_process, NULL, SIM800_FLOW_ASYNC);
+            break;
+
+            case 7:
+                debug_printf("[SIM800] init stage: set network registration info format\n");
+                sim800_cmd(p, "AT+CREG=2\n", 1000, module_init_process, NULL, SIM800_FLOW_ASYNC);
+            break;
+
+            case 8:
+                debug_printf("[SIM800] init stage: set local timestamp mode\n");
+                sim800_cmd(p, "AT+CLTS=1\n", 1000, module_init_process, NULL, SIM800_FLOW_ASYNC);
+            break;
+
+            case 9:
+                debug_printf("[SIM800] init stage: set operator selection\n");
+                sim800_cmd(p, "AT+COPS=0,2\n", 1000, module_init_process, NULL, SIM800_FLOW_ASYNC);
+            break;
+
+            case 10:
+                debug_printf("[SIM800] init stage: set SMS text mode\n");
+                sim800_cmd(p, "AT+CMGF=1\n", 1000, module_init_process, NULL, SIM800_FLOW_ASYNC);
+            break;
+
+            case 11:
+                debug_printf("[SIM800] init stage: set SMS notification mode\n");
+                sim800_cmd(p, "AT+CNMI=1,2,0,0,0\n", 1000, module_init_process, NULL, SIM800_FLOW_ASYNC);
+                break;
+
+            case 12:
+                debug_printf("[SIM800] init stage: set SMS text encoding\n");
+                sim800_cmd(p, "AT+CSCS=\"UCS2\"\n", 1000, module_init_process, NULL, SIM800_FLOW_ASYNC);
             break;
 
             default:
-                if (p->Module.SimCardState == SIM800_SIM_CARD_READY) {
-                    switch_module_state(p, SIM800_MODULE_STATE_READY);
-                } else {
-                    switch_module_state(p, SIM800_MODULE_STATE_ERROR);
-                }
+            break;
         }
     }
 }
@@ -276,6 +389,7 @@ void sim800_run(Sim800Handle_t* p) {
     static uint32_t ts_every_second = 0;
     static uint32_t ts_every_10_seconds = 0;
     static uint32_t ts_every_30_seconds = 0;
+    static uint32_t ts_every_minute = 0;
 
     sim800_rx_ring_parser();
 
@@ -298,6 +412,19 @@ void sim800_run(Sim800Handle_t* p) {
         case SIM800_MODULE_STATE_ERROR: /* event-driven by timer */
             break;
 
+        case SIM800_MODULE_STATE_NOT_REGISTERED:
+            /* every minute */
+            if ((SIM800_GET_TICK() - ts_every_minute) >= 60 * 1000) {
+                ts_every_minute = SIM800_GET_TICK();
+
+                /* Soft reset module */
+                sim800_cmd(p, "AT+CFUN=1,1\n", 1000, NULL, NULL, SIM800_FLOW_SYNC);
+
+                /* Reinitialize GSM */
+                switch_module_state(p, SIM800_MODULE_STATE_UNDEFINED);
+            }
+            break;
+
         case SIM800_MODULE_STATE_READY:
             sim800_gsm_run(p);
 
@@ -318,6 +445,24 @@ void sim800_run(Sim800Handle_t* p) {
                         sim800_cmd(p, "AT+CSQ\n", 1000, NULL, NULL, SIM800_FLOW_ASYNC);
                     }
                 }
+            }
+            if (p->Gsm.Network.stat && !p->Gsm.Network.mnc) {
+                /* Request GSM network operator code (mnc) */
+                sim800_parser_add(p, RESPONSE_GSM_OPERATOR, cops_parser, NULL);
+                sim800_cmd(p, "AT+COPS?\n", 1000, NULL, NULL, SIM800_FLOW_ASYNC);
+            }
+            if (SIM800_GET_TICK() - ts_every_second >= 1 * 1000) {
+                // if (sim800_cmd(p, "AT+CNMI=1,2,0,0,0\n", 1000, NULL, NULL, SIM800_FLOW_ASYNC) ==
+                //     SIM800_RESULT_OK) {
+                    ts_every_second = SIM800_GET_TICK();
+                    // }
+            }
+            if (SIM800_GET_TICK() - ts_every_minute >= 60 * 1000) {
+                if (sim800_cmd(p, "AT+CMGD=1,4\n", 1000, NULL, NULL, SIM800_FLOW_ASYNC) ==
+                    SIM800_RESULT_OK) {
+                    debug_printf("\n[GSM] removing all messages in memory\n");
+                    ts_every_minute = SIM800_GET_TICK();
+                    }
             }
             break;
 

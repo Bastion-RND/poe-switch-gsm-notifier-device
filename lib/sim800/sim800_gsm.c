@@ -4,35 +4,11 @@
 #include "sim800.h"
 #include "utf8_xcoder.h"
 
-static int8_t idxDelete = 1;
-static bool smsReadyFlag = false;
+static void switch_gsm_state(Sim800Handle_t *, sim800GsmState_t);
+static void switch_sms_state(Sim800Handle_t *, sim800SmsState_t);
+static void gsm_init_process(Sim800Handle_t *, Sim800Event_t, void *);
 
-static void switch_gsm_state(Sim800Handle_t*, sim800GsmState_t);
-static void switch_sms_state(Sim800Handle_t*, sim800SmsState_t);
-static void gsm_init_process(Sim800Handle_t*, Sim800Event_t, void *);
-
-static void creg_parser(Sim800Handle_t* p, const char *str, void *param) {
-  const char *ptr = str + strlen("+CREG: ");
-
-  // '+CREG: 1,"66C6","0638"\r\n'
-  // TODO: hex parser
-
-  p->Gsm.Network.stat = sim800_parse_int(&ptr);
-  ptr += 2; /* skip [ ," ] */
-
-  sim800_parse_str(&ptr, &p->Gsm.Network.lac[0]);
-  ptr += 3; /* skip [ "," ] */
-
-  sim800_parse_str(&ptr, &p->Gsm.Network.ci[0]);
-
-  if (p->Gsm.Network.stat == 1) {
-    switch_gsm_state(p, SIM800_GSM_STATE_READY);
-  } else {
-    switch_gsm_state(p, SIM800_GSM_STATE_NOT_REGISTERED);
-  }
-}
-
-static void no_carrier_parser(Sim800Handle_t* p, const char *str, void *param) {
+static void no_carrier_parser(Sim800Handle_t *p, const char *str, void *param) {
   debug_printf("< %s > %s\n", __func__, str);
   switch_gsm_state(p, SIM800_GSM_STATE_READY);
 }
@@ -102,34 +78,12 @@ static void no_carrier_parser(Sim800Handle_t* p, const char *str, void *param) {
 //   }
 // }
 
-static void cops_parser(Sim800Handle_t* p, const char *str, void *param) {
-  const char *ptr = str + strlen(RESPONSE_GSM_OPERATOR);
-  int num;
-
-  // '+COPS: 0,2,"25099"'
-
-  num = sim800_parse_int(&ptr); // <mode>
-  ptr += 1;                     /* skip [ , ] */
-
-  num = sim800_parse_int(&ptr); // <format>
-  ptr += 2;                     /* skip [ ," ] */
-
-  p->Gsm.Network.mnc = sim800_parse_int(&ptr);
-  ptr += 1; /* skip [ , ] */
-
-  sim800_parser_remove(p, RESPONSE_GSM_OPERATOR);
-}
-
-static void cmgl_parser(Sim800Handle_t* p, const char *str, void *param) {
+static void cmgl_parser(Sim800Handle_t *p, const char *str, void *param) {
   debug_printf("< %s > %s\n", __func__, str);
 }
 
-static void sms_ready_parser(Sim800Handle_t* p, const char *str, void *param) {
-  smsReadyFlag=true;
-  debug_printf("< %s > %s\n", __func__, str);
-}
-
-static void sms_send_prompt_parser(Sim800Handle_t* p, const char *str, void *param) {
+static void sms_send_prompt_parser(Sim800Handle_t *p, const char *str,
+                                   void *param) {
   if (p && p->Gsm.Sms.State == SIM800_SMS_STATE_TRANSMIT_AWAITING_PROMPT) {
     switch_sms_state(p, SIM800_SMS_STATE_TRANSMIT_PROCEEDING);
 
@@ -148,7 +102,8 @@ static void sms_send_prompt_parser(Sim800Handle_t* p, const char *str, void *par
   }
 }
 
-static void sms_send_result_parser(Sim800Handle_t* p, const char *str, void *param) {
+static void sms_send_result_parser(Sim800Handle_t *p, const char *str,
+                                   void *param) {
   char res[32];
   sim800_readline(p, res, sizeof(res), 1000); // skip "\r\n"
   sim800_readline(p, res, sizeof(res), 1000); // "OK" or "ERROR"
@@ -160,24 +115,19 @@ static void sms_send_result_parser(Sim800Handle_t* p, const char *str, void *par
   }
 }
 
-static void switch_gsm_state(Sim800Handle_t* p, sim800GsmState_t NewGsmState) {
+static void switch_gsm_state(Sim800Handle_t *p, sim800GsmState_t NewGsmState) {
   switch (NewGsmState) {
   case SIM800_GSM_STATE_UNDEFINED:
-    debug_printf("[GSM network] switch state to UNDEFINED\n");
+    debug_printf("[GSM] switch state to UNDEFINED\n");
     memset(&p->Gsm, 0x00, sizeof(Sim800Gsm_t));
     break;
 
   case SIM800_GSM_STATE_INITIALIZATION:
     debug_printf("[GSM] switch state to INITIALIZATION\n");
-    sim800_parser_add(p, "+CREG: ", creg_parser, NULL);
-
-    // sim800_parser_add(p, "+CMTI: ", cmti_parser, NULL);
-    // sim800_parser_add(p, "+CMGR: ", cmgr_parser, NULL);
-    sim800_parser_add(p, "SMS Ready", sms_ready_parser, NULL);
-
-    // switch_sms_state(p, SIM800_SMS_STATE_IDLE);
-
-    gsm_init_process(p, SIM800_EVENT_INITIALIZATION_BEGIN, NULL);
+    // sim800_parser_add(p, "+CREG: ", creg_parser, NULL);
+    // sim800_parser_add(p, "SMS Ready", sms_ready_parser, NULL);
+    switch_sms_state(p, SIM800_SMS_STATE_IDLE);
+    // gsm_init_process(p, SIM800_EVENT_INITIALIZATION_BEGIN, NULL);
     break;
 
   case SIM800_GSM_STATE_ERROR:
@@ -223,95 +173,7 @@ static void switch_sms_state(Sim800Handle_t *p, sim800SmsState_t NewSmsState) {
   p->Gsm.Sms.State = NewSmsState;
 }
 
-static void gsm_init_process(Sim800Handle_t* p, Sim800Event_t ev, void *param) {
-  (void)param;
-  static int stage;
-  static int errCounter = 0;
-  char str[128];
-
-  switch (ev) {
-  case SIM800_EVENT_INITIALIZATION_BEGIN:
-    stage = 0;
-    break;
-
-  case SIM800_EVENT_CMD_RESULT_ERR:
-    errCounter++;
-    if (errCounter >= 10) {
-      switch_gsm_state(p, SIM800_GSM_STATE_ERROR);
-      return;
-    }
-    SIM800_DELAY_MS(500); /* wait, last step... */
-    break;
-
-  case SIM800_EVENT_CMD_RESULT_OK:
-    stage++; /* switch to next step */
-    break;
-
-  default: /* retry last step */
-    break;
-  }
-
-  switch (stage) {
-  case 0:
-    debug_printf("[GSM] init stage 0: set network registration info format\n");
-    snprintf(str, sizeof(str), "AT+CREG=%d\n", 2);
-    sim800_cmd(p, str, 1000, gsm_init_process, NULL, SIM800_FLOW_ASYNC);
-    break;
-
-  case 1:
-    debug_printf("[GSM] init stage 1: set local timestamp mode\n");
-    snprintf(str, sizeof(str), "AT+CLTS=%d\n", 1);
-    sim800_cmd(p, str, 1000, gsm_init_process, NULL, SIM800_FLOW_ASYNC);
-    break;
-
-  case 2:
-    debug_printf("[GSM] init stage 2: set operator selection\n");
-    snprintf(str, sizeof(str), "AT+COPS=%d,%d\n", 0, 2);
-    sim800_cmd(p, str, 1000, gsm_init_process, NULL, SIM800_FLOW_ASYNC);
-    break;
-
-    // case 6:
-    //     debug_printf("[GSM] stage 6: set SMS magic text format\n");
-    //     snprintf(str, sizeof(str), "AT+CSMP=17,167,0,25\n"); //,25
-    //     sim800_cmd(p, str, 1000, gsm_init_process, NULL, SIM800_FLOW_ASYNC);
-    //     break;
-
-  case 3:
-    debug_printf("[GSM] init stage 3: set SMS text mode\n");
-    snprintf(str, sizeof(str), "AT+CMGF=%d\n", 1);
-    sim800_cmd(p, str, 1000, gsm_init_process, NULL, SIM800_FLOW_ASYNC);
-    break;
-
-  case 4:
-    debug_printf("[GSM] init stage 4: set SMS text encoding\n");
-    snprintf(str, sizeof(str), "AT+CSCS=\"%s\"\n", "UCS2");
-    sim800_cmd(p, str, 1000, gsm_init_process, NULL, SIM800_FLOW_ASYNC);
-    break;
-
-  // case 5:
-  //     debug_printf("[GSM] init stage 5: set SMS storage\n");
-  //   sim800_cmd(p, "AT+CPMS=\"SM\",\"SM\",\"SM\"\n", 1000, gsm_init_process, NULL, SIM800_FLOW_ASYNC);
-  //   break;
-  //
-  // case 8:
-  //   debug_printf("[GSM] init stage 8: disable NetLight LED\n");
-  //   snprintf(str, sizeof(str), "AT+CNETLIGHT=%d\n", 0);
-  //   sim800_cmd(p, str, 1000, gsm_init_process, NULL, SIM800_FLOW_ASYNC);
-  //   break;
-
-  // case 9:
-  //   debug_printf("[GSM] init stage 9: delete all SMS\n");
-  //   snprintf(str, sizeof(str), "AT+CMGDA=\"DEL ALL\"\n");
-  //   sim800_cmd(p, str, 1000, gsm_init_process, NULL, SIM800_FLOW_ASYNC);
-  //   break;
-
-  default:
-    switch_gsm_state(p, SIM800_GSM_STATE_READY);
-    break;
-  }
-}
-
-void sim800_gsm_run(Sim800Handle_t* p) {
+void sim800_gsm_run(Sim800Handle_t *p) {
   static uint32_t ts_every_second = 0;
   static uint32_t ts_every_10_seconds = 0;
   static uint32_t ts_every_30_seconds = 0;
@@ -325,7 +187,7 @@ void sim800_gsm_run(Sim800Handle_t* p) {
     break;
 
   case SIM800_GSM_STATE_INITIALIZATION:
-    break;
+    break; /* event-driven waiting */
 
   case SIM800_GSM_STATE_NOT_REGISTERED:
     /* every minute */
@@ -341,34 +203,26 @@ void sim800_gsm_run(Sim800Handle_t* p) {
     break;
 
   case SIM800_GSM_STATE_READY:
-    if (!smsReadyFlag) return;
-    if (!sim800_is_locked(p)) {
-      if (p->Gsm.Network.stat && !p->Gsm.Network.mnc) {
-        /* Request GSM network operator code (mnc) */
-        sim800_parser_add(p, RESPONSE_GSM_OPERATOR, cops_parser, NULL);
-        sim800_cmd(p, "AT+COPS?\n", 1000, NULL, NULL, SIM800_FLOW_ASYNC);
-      }
-      if ((SIM800_GET_TICK() - ts_every_second) >= 1 * 1000) {
-        ts_every_second = SIM800_GET_TICK();
-        sim800_cmd(p, "AT+CNMI=2,1\n", 1000, NULL, NULL, SIM800_FLOW_ASYNC);
-        // sim800_cmd(p, "AT+CSDH=1\n", 1000, NULL, NULL, SIM800_FLOW_ASYNC);
-      }
-      if ((SIM800_GET_TICK() - ts_every_10_seconds) >= 10 * 1000) {
-        ts_every_10_seconds = SIM800_GET_TICK();
-        sim800_parser_add(p, "+CMGL: ", cmgl_parser, NULL);
-        sim800_cmd(p, "AT+CMGL=\"ALL\",1\n", 1000, NULL, NULL, SIM800_FLOW_ASYNC);
-        // sim800_cmd(p, "AT+CSDH=1\n", 1000, NULL, NULL, SIM800_FLOW_ASYNC);
-      }
-      if ((SIM800_GET_TICK() - ts_every_minute) >= 60 * 1000) {
-        ts_every_minute = SIM800_GET_TICK();
-        if (idxDelete >= 1) {
-          debug_printf("\n[GSM] removing by idx: %d\n\n", idxDelete);
-          snprintf(str, sizeof(str), "AT+CMGD=%d\n", idxDelete);
-          sim800_cmd(p, str, 1000, NULL, NULL, SIM800_FLOW_ASYNC);
-          idxDelete = -1;
-        }
-      }
-    }
+    // if (p->Gsm.Sms.State != SIM800_SMS_STATE_IDLE) return;
+    // uint32_t curr_time = SIM800_GET_TICK();
+    // if (p->Gsm.Network.stat && !p->Gsm.Network.mnc) {
+    //   /* Request GSM network operator code (mnc) */
+    //   sim800_parser_add(p, RESPONSE_GSM_OPERATOR, cops_parser, NULL);
+    //   sim800_cmd(p, "AT+COPS?\n", 1000, NULL, NULL, SIM800_FLOW_ASYNC);
+    // }
+    // if (curr_time - ts_every_second >= 1 * 1000) {
+    //   if (sim800_cmd(p, "AT+CNMI=2,1\n", 1000, NULL, NULL, SIM800_FLOW_ASYNC) ==
+    //       SIM800_RESULT_OK) {
+    //     ts_every_second = SIM800_GET_TICK();
+    //   }
+    // }
+    // if (curr_time - ts_every_minute >= 60 * 1000) {
+    //   if (sim800_cmd(p, "AT+CMGDA=\"ALL\"\n", 1000, NULL, NULL, SIM800_FLOW_ASYNC) ==
+    //       SIM800_RESULT_OK) {
+    //     debug_printf("\n[GSM] removing all messages in memory\n");
+    //     ts_every_minute = SIM800_GET_TICK();
+    //       }
+    // }
     break;
 
   default:
@@ -376,12 +230,14 @@ void sim800_gsm_run(Sim800Handle_t* p) {
   }
 }
 
-void sim800_gsm_network_restart(Sim800Handle_t* p) {
+void sim800_gsm_network_restart(Sim800Handle_t *p) {
   switch_gsm_state(p, SIM800_GSM_STATE_UNDEFINED);
 }
 
-bool sim800_sms_send(Sim800Handle_t* p, char *phone, char *message) {
-  if (p == NULL) {return false;}
+bool sim800_sms_send(Sim800Handle_t *p, char *phone, char *message) {
+  if (p == NULL) {
+    return false;
+  }
 
   char str[strlen(phone) * 4 + 11 /* AT+CMGS=""\n */ + 1 /* \0 */];
 
