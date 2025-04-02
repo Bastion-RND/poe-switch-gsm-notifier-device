@@ -155,35 +155,26 @@ static void csq_parser(Sim800Handle_t* p, const char *str, void *param) {
 }
 
 static void cmt_parser(Sim800Handle_t* p, const char *str, void *param) {
-    uint8_t raw_msg[280 + 1]; /* (140 byte * 2 char/byte) + \0 */
-    uint8_t text_msg[70];
-    sim800_readline(p, raw_msg, sizeof(raw_msg), 1000);
-    uint8_t* ptr = &raw_msg[0];
-    uint8_t* textPtr = &text_msg[0];
-    debug_printf("Header SMS raw: %s\n", str);
+    char src_msg[280 + 1]; /* (140 byte * 2 char/byte) + \0 */
+    sim800_readline(p, src_msg, sizeof(src_msg), 1000);
+    char* src_ptr = &src_msg[0];
 
-    int counter = (int)strlen(raw_msg);
+    char text_msg[70];
+    char* textPtr = text_msg;
 
+    int counter = (int)strlen(src_msg);
+    if (counter % 4 != 0) {
+        debug_printf("[%s] error char counter\n", __func__);
+        return;
+    }
     while (counter) {
-        int code_point = str_to_code_point(&ptr);
-        if (code_point < 0) {
-          debug_printf("Error decoding code point\n");
-          break;
-        }
+        char c = (str_to_code_point(&src_ptr) & 0x7F);
         counter -= 4;
-        // Преобразуем кодовый пункт в символы UTF-16LE и выводим
-        // В UTF-16LE младший байт идет первым, поэтому меняем порядок байтов
-        char utf16_char[2];
-        utf16_char[0] = (code_point >> 0) & 0xFF;  // Младший байт
-        utf16_char[1] = (code_point >> 8) & 0xFF; // Старший байт
-
-        // Выводим символы
-        debug_printf("%c%c", utf16_char[0], utf16_char[1]);
-
+        *textPtr=c;
         textPtr++;
     }
-    debug_printf("\n");
-    switch_gsm_state(p, SIM800_GSM_STATE_READY);
+    *textPtr = '\0';
+    debug_printf("Input SMS: %s\n", text_msg);
 }
 
 static void sms_ready_parser(Sim800Handle_t *p, const char *str, void *param) {
@@ -238,6 +229,7 @@ static void switch_module_state(Sim800Handle_t* p, Sim800ModuleState_t NewState)
             sim800_parser_add(p, REQUEST_REV, string_parser, p->Module.revision);
             sim800_parser_add(p, "+CREG: ", creg_parser, NULL);
             sim800_parser_add(p, "SMS Ready", sms_ready_parser, NULL);
+            sim800_parser_add(p, "+CMT: ", cmt_parser, NULL);
             module_init_process(p, SIM800_EVENT_INITIALIZATION_BEGIN, NULL);
             break;
 
