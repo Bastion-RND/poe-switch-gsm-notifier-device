@@ -29,7 +29,7 @@ typedef struct sim800Sms_ {
   sim800SmsState_t State;
 
   char phone[64 + 1]; // 16 * 4 + '\0'
-  char msg[320 + 1];  // 70 * 4 + '\0'
+  char message[320 + 1];  // 70 * 4 + '\0'
 
   size_t len;
   size_t idx;

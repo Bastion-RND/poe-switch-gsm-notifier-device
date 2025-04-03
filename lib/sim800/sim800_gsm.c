@@ -90,7 +90,7 @@ static void sms_send_prompt_parser(Sim800Handle_t *p, const char *str,
     while (p->Gsm.Sms.idx < p->Gsm.Sms.len) {
       while (circular_buf_full(p->TxCbufHandle))
         ;
-      circular_buf_put(p->TxCbufHandle, p->Gsm.Sms.msg[p->Gsm.Sms.idx++]);
+      circular_buf_put(p->TxCbufHandle, p->Gsm.Sms.message[p->Gsm.Sms.idx++]);
       SIM800_TXE_IT_ENABLE(); /* Transmit data */
     }
     /* finish SMS text */
@@ -263,11 +263,11 @@ bool sim800_sms_send(Sim800Handle_t *p, char *phone, char *message) {
     snprintf(str, sizeof(str), "AT+CMGS=\"%s\"\r", p->Gsm.Sms.phone);
     if (sim800_cmd(p, str, 10 * 1000, NULL, NULL, SIM800_FLOW_ASYNC) ==
         SIM800_RESULT_OK) {
-      ptr = &p->Gsm.Sms.msg[0];
+      ptr = &p->Gsm.Sms.message[0];
       while ((code = decode_code_point(&message))) {
         code_point_to_str(&ptr, code);
       }
-      p->Gsm.Sms.len = strlen(p->Gsm.Sms.msg);
+      p->Gsm.Sms.len = strlen(p->Gsm.Sms.message);
       p->Gsm.Sms.idx = 0;
 
       ts = SIM800_GET_TICK();

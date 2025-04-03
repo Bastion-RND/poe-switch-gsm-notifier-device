@@ -154,27 +154,52 @@ static void csq_parser(Sim800Handle_t* p, const char *str, void *param) {
     on_rssi_updated_callback(p->Module.RSSI.dBm);
 }
 
-static void cmt_parser(Sim800Handle_t* p, const char *str, void *param) {
-    char src_msg[280 + 1]; /* (140 byte * 2 char/byte) + \0 */
-    sim800_readline(p, src_msg, sizeof(src_msg), 1000);
-    char* src_ptr = &src_msg[0];
-
-    char text_msg[70];
-    char* textPtr = text_msg;
-
-    int counter = (int)strlen(src_msg);
+static void usc2_to_ascii(char* src, char* dest) {
+    int counter = (int)strlen(src);
     if (counter % 4 != 0) {
         debug_printf("[%s] error char counter\n", __func__);
-        return;
+    } else {
+        while (counter) {
+            char c = (str_to_code_point(&src) & 0x7F);
+            counter -= 4;
+            *dest=c;
+            dest++;
+        }
     }
-    while (counter) {
-        char c = (str_to_code_point(&src_ptr) & 0x7F);
-        counter -= 4;
-        *textPtr=c;
-        textPtr++;
+    *dest = '\0';
+}
+
+char* extract_quoted_part(const char *input, char *output, size_t output_size) {
+    output[0] = '\0';
+    const char *start = strchr(input, '"');
+    if (start == NULL) {
+        return NULL;
     }
-    *textPtr = '\0';
-    debug_printf("Input SMS: %s\n", text_msg);
+    char *end = strchr(start + 1, '"');
+    if (end == NULL) {
+        return NULL;
+    }
+    size_t length = end - start - 1;
+    if (length >= output_size) {
+        length = output_size - 1;
+    }
+    strncpy(output, start + 1, length);
+    output[length] = '\0';
+    return end + 1;
+}
+
+static void cmt_parser(Sim800Handle_t* p, const char* message_header, void *param) {
+    (void)param;
+
+    char phone[48 + 1]; /* (12 chars * 4) + \0 */
+    extract_quoted_part(message_header, phone, sizeof(phone));
+    usc2_to_ascii(phone, p->Gsm.Sms.phone);
+
+    char message_body[280 + 1]; /* (140 byte * 2 char/byte) + \0 */
+    sim800_readline(p, message_body, sizeof(message_body), 1000);
+    usc2_to_ascii(message_body, p->Gsm.Sms.message);
+
+    on_new_sms_callback(p->Gsm.Sms.phone, p->Gsm.Sms.message);
 }
 
 static void sms_ready_parser(Sim800Handle_t *p, const char *str, void *param) {
@@ -516,9 +541,6 @@ bool sim800_parser_add(Sim800Handle_t* p, const char *reply,
     return false;
 }
 
-/**
- *
- */
 bool sim800_parser_remove(Sim800Handle_t* p, const char *reply) {
     if (reply) {
         for (int i = 0; i < SIM800_PARSERS_MAX; i++) {
@@ -571,4 +593,15 @@ __attribute__((weak)) void on_rssi_updated_callback(const int dBm) {
 
 __attribute__((weak)) void on_pin_checked_callback(const char *status) {
     debug_printf("[SIM800] on pin checked callback: %s\n", status);
+}
+
+__attribute__((weak)) void on_new_sms_callback(
+    const char *phone_number,
+    const char *sms_text
+    ) {
+    debug_printf(
+        "[SIM800] on new SMS callback, number: <%s>, text: <%s>\n",
+        phone_number,
+        sms_text
+        );
 }

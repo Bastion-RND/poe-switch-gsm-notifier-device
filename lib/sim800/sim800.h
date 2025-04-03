@@ -31,5 +31,6 @@ void sim800_unlock(Sim800Handle_t*);
 bool sim800_is_locked(Sim800Handle_t*);
 void on_pin_checked_callback(const char *status);
 void on_rssi_updated_callback(int dBm);
+void on_new_sms_callback(const char *phone_number, const char *sms_text);
 
 #endif /* SIM800_H_ */
