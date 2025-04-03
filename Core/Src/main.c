@@ -23,6 +23,7 @@
 /* USER CODE BEGIN Includes */
 #include "sim800.h"
 #include "button.h"
+#include "utf8_xcoder.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -61,7 +62,41 @@ static void MX_USART2_UART_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+// Пример функции для вывода символа на дисплей
+void display_char(unsigned char c) {
+  // Здесь должна быть логика для вывода символа на дисплей
+  // Например, отправка команды в драйвер дисплея
+  debug_printf("%c", c);  // Для демонстрации выводим символ в консоль
+}
 
+// Пример функции для декодирования UTF-8 и вывода строки на дисплей
+void display_utf8_string(const char *s) {
+  while (*s) {
+    unsigned char c = *s++;
+    if ((c & 0x80) == 0) {
+      // Однобайтовый символ (ASCII)
+      display_char(c);
+    } else if ((c & 0xE0) == 0xC0) {
+      // Двухбайтовый символ
+      unsigned char c2 = *s++;
+      unsigned char value = ((c & 0x1F) << 6) | (c2 & 0x3F);
+      display_char(value);
+    } else if ((c & 0xF0) == 0xE0) {
+      // Трехбайтовый символ
+      unsigned char c2 = *s++;
+      unsigned char c3 = *s++;
+      unsigned char value = ((c & 0x0F) << 12) | ((c2 & 0x3F) << 6) | (c3 & 0x3F);
+      display_char(value);
+    } else if ((c & 0xF8) == 0xF0) {
+      // Четырехбайтовый символ
+      unsigned char c2 = *s++;
+      unsigned char c3 = *s++;
+      unsigned char c4 = *s++;
+      unsigned char value = ((c & 0x07) << 18) | ((c2 & 0x3F) << 12) | ((c3 & 0x3F) << 6) | (c4 & 0x3F);
+      display_char(value);
+    }
+  }
+}
 /* USER CODE END 0 */
 
 /**

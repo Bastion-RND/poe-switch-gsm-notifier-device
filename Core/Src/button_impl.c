@@ -2,6 +2,7 @@
 #include "button.h"
 
 #include "sim800.h"
+#include "sim800_gsm_types.h"
 
 extern Sim800Handle_t* Sim800Handle;
 
@@ -48,12 +49,27 @@ button_get_tick()
   return HAL_GetTick();
 }
 
+void send_cb(Sim800SmsEvent_t ev) {
+  switch (ev) {
+    case SIM800_EVENT_SEND_SMS_ERROR:
+      debug_printf("Send ERROR\n");
+    break;
+    case SIM800_EVENT_SEND_SMS_SUCCESS:
+      debug_printf("Send SUCCESS\n");
+    break;
+    default:
+      debug_printf("UNKNOWN EVENT\n");
+    break;
+  }
+}
+
 void
 button_pressed_long_callback(Button_t *p) {
   switch(p->id) {
   case BUTTON_SEND_SMS_ID:
   debug_printf("Try send SMS\n");
-  sim800_sms_send(Sim800Handle, "+79094294096", "Hello");
+  sim800_sms_send(Sim800Handle, "+79094294096", "The quick brown fox jumps over the lazy dog and runs away quickly", send_cb);
+
     break;
   }
 }
