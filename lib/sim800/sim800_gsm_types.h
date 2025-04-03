@@ -5,6 +5,13 @@
 #include <stddef.h>
 #include <stdint.h>
 
+typedef enum Sim800SmsEvent_ {
+  SIM800_EVENT_SEND_SMS_SUCCESS = 0,
+  SIM800_EVENT_SEND_SMS_ERROR,
+} Sim800SmsEvent_t;
+
+typedef void (*sim800_sms_callback_t)(Sim800SmsEvent_t);
+
 typedef enum sim800GsmState_ {
   SIM800_GSM_STATE_UNDEFINED = 0,
   SIM800_GSM_STATE_INITIALIZATION,
@@ -18,21 +25,27 @@ typedef enum sim800SmsState_ {
   SIM800_SMS_STATE_UNDEFINED = 0,
   SIM800_SMS_STATE_IDLE,
   SIM800_SMS_STATE_TRANSMIT_AWAITING_PROMPT,
-  SIM800_SMS_STATE_TRANSMIT_PROCEEDING,
+  SIM800_SMS_STATE_TRANSMIT_PAYLOAD,
   SIM800_SMS_STATE_TRANSMIT_AWAITING_RESULT,
   SIM800_SMS_STATE_TRANSMIT_SUCCESS,
   SIM800_SMS_STATE_TRANSMIT_ERROR,
-  SIM800_SMS_STATE_RECEIVE_,
 } sim800SmsState_t;
 
 typedef struct sim800Sms_ {
   sim800SmsState_t State;
 
-  char phone[64 + 1]; // 16 * 4 + '\0'
-  char message[320 + 1];  // 70 * 4 + '\0'
+  struct {
+    char phone[64 + 1]; // 16 * 4 + '\0'
+    char message[1024 + 1];  // 1024 bytes + '\0'
+    size_t len;
+    size_t charIdx;
+    sim800_sms_callback_t callback;
+  } Send;
 
-  size_t len;
-  size_t idx;
+  struct {
+    char phone[64 + 1]; // 16 * 4 + '\0'
+    char message[320 + 1];  // 70 * 4 + '\0'
+  } Recv;
 
   int smsIdxInMem;
 

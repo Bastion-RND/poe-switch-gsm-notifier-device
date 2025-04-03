@@ -193,13 +193,13 @@ static void cmt_parser(Sim800Handle_t* p, const char* message_header, void *para
 
     char phone[48 + 1]; /* (12 chars * 4) + \0 */
     extract_quoted_part(message_header, phone, sizeof(phone));
-    usc2_to_ascii(phone, p->Gsm.Sms.phone);
+    usc2_to_ascii(phone, p->Gsm.Sms.Recv.phone);
 
     char message_body[280 + 1]; /* (140 byte * 2 char/byte) + \0 */
     sim800_readline(p, message_body, sizeof(message_body), 1000);
-    usc2_to_ascii(message_body, p->Gsm.Sms.message);
+    usc2_to_ascii(message_body, p->Gsm.Sms.Recv.message);
 
-    on_new_sms_callback(p->Gsm.Sms.phone, p->Gsm.Sms.message);
+    on_new_sms_callback(p->Gsm.Sms.Recv.phone, p->Gsm.Sms.Recv.message);
 }
 
 static void sms_ready_parser(Sim800Handle_t *p, const char *str, void *param) {
