@@ -23,6 +23,7 @@
 /* USER CODE BEGIN Includes */
 #include "sim800.h"
 #include "button.h"
+#include "eeprom_in_flash.h"
 #include "utf8_xcoder.h"
 /* USER CODE END Includes */
 
@@ -130,6 +131,7 @@ int main(void)
   MX_GPIO_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
+  EepromInFlash.init();
   Sim800Handle = sim800_init();
   user_button =	button_init(ButtonActiveLevel_HIGH, BUTTON_SEND_SMS_ID);
 
