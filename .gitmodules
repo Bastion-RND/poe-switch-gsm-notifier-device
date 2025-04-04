@@ -1,3 +1,6 @@
 [submodule "lib/dio"]
 	path = lib/dio
 	url = git@github.com:Bastion-RND/MCU_Libraries_UserInterface.git
+[submodule "lib/eeprom_in_flash"]
+	path = lib/eeprom_in_flash
+	url = git@github.com:Bastion-RND/mcu-lib-lang-c-eeprom-in-flash.git
