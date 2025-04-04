@@ -91,32 +91,168 @@ static void cmd_b_parse(char* text) {
   }
 }
 
+bool parse_relay_state(char* text, int* state) {
+  bool result = false;
+  if (*text == '1') {
+    *state = 1;
+    result = true;
+  } else if (*text == '0') {
+    *state = 0;
+    result = true;
+  } else if (*text == 'x') {
+    *state = -1;
+    result = true;
+  }
+  return result;
+}
+
+static void cmd_r_parse(char* phone_number, char* text) {
+  int relay_1_state = -1;
+  int relay_2_state = -1;
+
+  int stage = 0;
+  char* txtPtr = text;
+  if (strlen(text) != 4) return;
+  while (stage < 2) {
+    if (*txtPtr == ',') {
+      txtPtr++;
+      continue;
+    }
+    if (*txtPtr == '\0') {
+      break;
+    }
+    switch (stage) {
+      case 0:
+        if (!parse_relay_state(txtPtr, &relay_1_state)) {
+          return;
+        }
+        txtPtr++;
+        break;
+
+      case 1:
+        if (!parse_relay_state(txtPtr, &relay_2_state)) {
+          return;
+        }
+        break;
+    }
+    stage++;
+  }
+  debug_printf("[Device] Change relay state: RL1: %d, RL2: %d\n", relay_1_state, relay_2_state);
+}
+
+static void cmd_c_parse(char* phone_number, char* text) {
+  bool action = false;
+  int stage = 0;
+  size_t idx = 0;
+  char* txtPtr = text;
+  char deviceName[64 + 1];
+  size_t deviceNameLen = sizeof(deviceName) / sizeof(deviceName[0]) - 1;
+  char notifyPermissions[4 + 1];
+  size_t notifyPermissionsLen = sizeof(notifyPermissions) / sizeof(notifyPermissions[0]) - 1;
+  char batteryLevelStr[4 + 1];
+  size_t batteryLevelStrLen = sizeof(batteryLevelStr) / sizeof(batteryLevelStr[0]) - 1;
+  float batteryLevel= 0.0f;
+  if (!check_phone_number(phone_number)) return;
+  while (stage < 3) {
+    if (*txtPtr == ',') {
+      txtPtr++;
+      continue;
+    }
+    if (*txtPtr == '\0') {
+      break;
+    }
+    switch (stage) {
+
+    case 0:
+      for (idx = 0; idx < deviceNameLen; idx++) {
+        if (!check_comma(txtPtr) && *txtPtr != '\0') {
+          deviceName[idx] = *txtPtr;
+          txtPtr++;
+        } else {
+          break;
+        }
+      }
+      deviceName[idx] = '\0';
+      break;
+
+    case 1:
+      for (idx =0; idx < notifyPermissionsLen; idx++) {
+        if (!check_comma(txtPtr) && *txtPtr != '\0') {
+          notifyPermissions[idx] = *txtPtr;
+          txtPtr++;
+        } else {
+          return;
+        }
+      }
+      notifyPermissions[idx] = '\0';
+      break;
+
+    case 2:
+      for (idx = 0; idx < batteryLevelStrLen; idx++) {
+        if (!check_comma(txtPtr) && *txtPtr != '\0') {
+          batteryLevelStr[idx] = *txtPtr;
+          txtPtr++;
+        } else {
+          return;
+        }
+      }
+      batteryLevelStr[idx] = '\0';
+      batteryLevel = strtof(batteryLevelStr, NULL);
+      if (batteryLevel == 0.0 && batteryLevelStr[0] != '0') {
+        return;
+      }
+      break;
+    }
+    stage++;
+  }
+  debug_printf("[Device] New config: device name <%s>, permissions <%s>, battery voltage <%f>", deviceName, notifyPermissions, batteryLevel);
+}
+
+static void single_char_cmd_parser(char* phone_number, const char c) {
+  switch (c) {
+  case 'l':
+    debug_printf("[Device] Get numbers list for %s\n", phone_number);
+    break;
+  case 'g':
+    debug_printf("[Device] Get config for %s\n", phone_number);
+    break;
+  default:
+    break;
+  }
+}
+
+
 void command_parser(char* phone_number, char* text) {
   debug_printf("[Device] command parser start, phone: %s, text: %s\n", phone_number, text);
   char* textPtr = text;
-  if (strlen(text) > 1 && *textPtr == '$') {
+  if (strlen(textPtr) >= 2 && *textPtr == '$') {
     textPtr++;
-    char cmd = *textPtr;
-    textPtr++;
-    switch (cmd) {
+    if (strlen(textPtr) == 1) {
+      single_char_cmd_parser(phone_number, *textPtr);
+    } else {
+      switch (*textPtr) {
       case 'a':
-        cmd_a_parse(phone_number, textPtr);
+        cmd_a_parse(phone_number, ++textPtr);
         break;
       case 'b':
-        cmd_b_parse(textPtr);
-         break;
-      case 'l':
-          debug_printf("[Device] command <l> - get all binded numbers\n");
+        cmd_b_parse(++textPtr);
         break;
       case 'c':
-       debug_printf("[Device] command <c> - config upload\n");
-       break;
-      case 'g':
-       debug_printf("[Device] command <g> - get config\n");
-       break;
+        cmd_c_parse(phone_number, ++textPtr);
+        break;
       case 'r':
-       debug_printf("[Device] command <r> - set relay\n");
-       break;
+        cmd_r_parse(phone_number, ++textPtr);
+        break;
+      default:
+        break;
+      }
     }
   }
+}
+
+void on_new_sms_callback(
+    const char *phone_number,
+    const char *sms_text
+    ) {
+  command_parser(phone_number, sms_text);
 }
