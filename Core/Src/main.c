@@ -21,6 +21,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "device.h"
 #include "sim800.h"
 #include "button.h"
 #include "eeprom_in_flash.h"
@@ -131,7 +132,10 @@ int main(void)
   MX_GPIO_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
+  device_create();
+
   EepromInFlash.init();
+  Device.init();
   Sim800Handle = sim800_init();
   user_button =	button_init(ButtonActiveLevel_HIGH, BUTTON_SEND_SMS_ID);
 
@@ -143,7 +147,7 @@ int main(void)
   {
     // debug_printf("Hello, world\n");
     // HAL_Delay(1000);
-    sim800_run(Sim800Handle);
+    // sim800_run(Sim800Handle);
     button_run(&user_button);
     /* USER CODE END WHILE */
 
