@@ -1,0 +1,15 @@
+#ifndef EEPROM_IN_FLASH_CONF_H_
+#define EEPROM_IN_FLASH_CONF_H_
+
+#include "main.h"
+
+#define EIF_ERASED_DATA         (0xFFFFFFFF)
+#define EIF_MCU_FLASH_BASE      (FLASH_BASE)
+#define EIF_MCU_FLASH_SIZE      (256 * 1024)  // for STM32F030RCT
+#define EIF_MCU_FLASH_PAGE_SIZE (FLASH_PAGE_SIZE)
+#define EIF_BASE_OFFSET         (\
+  EIF_MCU_FLASH_SIZE - EIF_MCU_FLASH_PAGE_SIZE * 2\
+  )
+#define EIF_BASE_ADDRESS        (EIF_MCU_FLASH_BASE + EIF_BASE_OFFSET)
+
+#endif /* EEPROM_IN_FLASH_CONF_H_ */
