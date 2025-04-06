@@ -1,5 +1,5 @@
 #include "main.h"
-#include "button.h"
+#include "discrete_input.h"
 #include "device.h"
 
 #include "sim800.h"
@@ -8,7 +8,7 @@
 extern Sim800Handle_t* Sim800Handle;
 
 bool
-button_lowlevel_init(Button_t *p) {
+discrete_input_ll_init(DiscreteInput_t *p) {
     bool result = false;
     if (p) {
         /* Initialized in HAL */
@@ -18,7 +18,7 @@ button_lowlevel_init(Button_t *p) {
 }
 
 bool
-button_get_input(Button_t *p) {
+discrete_input_get_ll_input(DiscreteInput_t *p) {
     bool b;
 
     switch (p->id) {
@@ -41,7 +41,7 @@ button_get_input(Button_t *p) {
 }
 
 uint32_t
-button_get_tick() {
+discrete_input_get_ll_tick() {
     return HAL_GetTick();
 }
 
@@ -61,7 +61,7 @@ void send_cb(Sim800SmsEvent_t ev) {
 
 
 void
-button_released_callback(Button_t *p) {
+button_released_callback(DiscreteInput_t *p) {
     switch (p->id) {
         case BUTTON_TAMPER_ID:
             debug_printf("Button TAMPER released callback\n");
@@ -74,7 +74,7 @@ button_released_callback(Button_t *p) {
 }
 
 void
-button_pressed_long_callback(Button_t *p) {
+button_pressed_long_callback(DiscreteInput_t *p) {
     switch (p->id) {
         case BUTTON_SEND_SMS_ID:
             debug_printf("Try send SMS\n");

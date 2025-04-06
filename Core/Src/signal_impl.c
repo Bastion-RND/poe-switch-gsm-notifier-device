@@ -1,5 +1,5 @@
 #include "main.h"
-#include "signal.h"
+#include "discrete_output.h"
 
 bool
 signal_lowlevel_init(Signal_t *pDiscreteOutput) {
