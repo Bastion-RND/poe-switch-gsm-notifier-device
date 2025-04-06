@@ -83,8 +83,14 @@ void Error_Handler(void);
 #define SIM800_RESET_GPIO_Port GPIOC
 #define RESET_BTN_Pin GPIO_PIN_8
 #define RESET_BTN_GPIO_Port GPIOA
+#define USER_LED_Pin GPIO_PIN_9
+#define USER_LED_GPIO_Port GPIOA
 #define TAMPER_BTN_Pin GPIO_PIN_12
 #define TAMPER_BTN_GPIO_Port GPIOA
+#define RELAY_2_Pin GPIO_PIN_6
+#define RELAY_2_GPIO_Port GPIOB
+#define RELAY_1_Pin GPIO_PIN_7
+#define RELAY_1_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 
