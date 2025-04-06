@@ -35,8 +35,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-Sim800Handle_t* Sim800Handle = NULL;
-Button_t user_button;
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -51,6 +50,10 @@ Button_t user_button;
 SEGGER_RTT_CB _SEGGER_RTT;
 char seggerRttUpBuffer[BUFFER_SIZE_UP];
 char seggerRttDownBuffer[BUFFER_SIZE_DOWN];
+Sim800Handle_t* Sim800Handle = NULL;
+Button_t user_button;
+Button_t buttonReset;
+Button_t buttonTamper;
 
 /* USER CODE END PV */
 
@@ -138,6 +141,8 @@ int main(void)
   Device.init();
   Sim800Handle = sim800_init();
   user_button =	button_init(ButtonActiveLevel_HIGH, BUTTON_SEND_SMS_ID);
+  buttonReset = button_init(ButtonActiveLevel_HIGH, BUTTON_RESET_ID);
+  buttonTamper = button_init(ButtonActiveLevel_HIGH,BUTTON_TAMPER_ID);
 
   /* USER CODE END 2 */
 
@@ -149,6 +154,8 @@ int main(void)
     // HAL_Delay(1000);
     // sim800_run(Sim800Handle);
     button_run(&user_button);
+    button_run(&buttonReset);
+    button_run(&buttonTamper);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -289,6 +296,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(SIM800_RESET_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : RESET_BTN_Pin TAMPER_BTN_Pin */
+  GPIO_InitStruct.Pin = RESET_BTN_Pin|TAMPER_BTN_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
 

@@ -283,7 +283,24 @@ static void init() {
     }
 }
 
+static void run() {
+}
+
+void device_on_button_reset_pressed_long_callback(void) {
+    if (Device.State != DEVICE_STATE_UNDEFINED) {
+        Device.resetEvent = true;
+    }
+}
+
+void device_on_button_tamper_released_callback(void) {
+    if (Device.State != DEVICE_STATE_UNDEFINED) {
+        Device.tamperEvent = true;
+    }
+}
+
 void device_create(void) {
     memset(&Device, 0x00, sizeof(Device_t));
     Device.init = init;
+    Device.run = run;
+    Device.State = DEVICE_STATE_IDLE;
 }

@@ -79,8 +79,12 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 #define SEND_SMS_BTN_Pin GPIO_PIN_13
 #define SEND_SMS_BTN_GPIO_Port GPIOC
-#define SIM800_RESET_Pin GPIO_PIN_11
-#define SIM800_RESET_GPIO_Port GPIOA
+#define SIM800_RESET_Pin GPIO_PIN_3
+#define SIM800_RESET_GPIO_Port GPIOC
+#define RESET_BTN_Pin GPIO_PIN_8
+#define RESET_BTN_GPIO_Port GPIOA
+#define TAMPER_BTN_Pin GPIO_PIN_12
+#define TAMPER_BTN_GPIO_Port GPIOA
 
 /* USER CODE BEGIN Private defines */
 

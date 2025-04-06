@@ -1,7 +1,14 @@
 #ifndef DEVICE_H
 #define DEVICE_H
 
+#include <stdbool.h>
+
 #include "main.h"
+
+typedef enum DeviceState_ {
+  DEVICE_STATE_UNDEFINED = 0,
+  DEVICE_STATE_IDLE,
+} DeviceState_t;
 
 typedef struct Phone_ {
   uint8_t number[13];
@@ -9,8 +16,12 @@ typedef struct Phone_ {
 
 typedef struct Device_ {
   void 	(*init)(void);
+  void 	(*run)(void);
   uint8_t phoneCount;
   Phone_t phoneBook[50];
+  bool resetEvent;
+  bool tamperEvent;
+  DeviceState_t State;
 } Device_t;
 
 #pragma pack(push, 1)
@@ -30,5 +41,8 @@ typedef struct Config_ {
 extern Device_t Device;
 
 void device_create(void);
+
+void device_on_button_reset_pressed_long_callback(void);
+void device_on_button_tamper_released_callback(void);
 
 #endif //DEVICE_H
