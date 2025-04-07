@@ -63,10 +63,6 @@ extern "C" {
 #define debug_printf(...)
 #endif // DEBUG
 
-#define BUTTON_SEND_SMS_CLOCK_ENA()   __HAL_RCC_GPIOC_CLK_ENABLE()
-#define BUTTON_SEND_SMS_PIN           GPIO_PIN_13
-#define BUTTON_SEND_SMS_PORT          GPIOC
-
 /* USER CODE END EM */
 
 /* Exported functions prototypes ---------------------------------------------*/
@@ -79,8 +75,18 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 #define SEND_SMS_BTN_Pin GPIO_PIN_13
 #define SEND_SMS_BTN_GPIO_Port GPIOC
-#define SIM800_RESET_Pin GPIO_PIN_11
-#define SIM800_RESET_GPIO_Port GPIOA
+#define SIM800_RESET_Pin GPIO_PIN_3
+#define SIM800_RESET_GPIO_Port GPIOC
+#define RESET_BTN_Pin GPIO_PIN_8
+#define RESET_BTN_GPIO_Port GPIOA
+#define USER_LED_Pin GPIO_PIN_9
+#define USER_LED_GPIO_Port GPIOA
+#define TAMPER_BTN_Pin GPIO_PIN_12
+#define TAMPER_BTN_GPIO_Port GPIOA
+#define RELAY_2_Pin GPIO_PIN_6
+#define RELAY_2_GPIO_Port GPIOB
+#define RELAY_1_Pin GPIO_PIN_7
+#define RELAY_1_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 

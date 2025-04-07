@@ -21,10 +21,11 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "device.h"
 #include "sim800.h"
-#include "button.h"
+#include "discrete_input.h"
+#include "discrete_output.h"
 #include "eeprom_in_flash.h"
-#include "utf8_xcoder.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -34,8 +35,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-Sim800Handle_t* Sim800Handle = NULL;
-Button_t user_button;
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -50,6 +50,17 @@ Button_t user_button;
 SEGGER_RTT_CB _SEGGER_RTT;
 char seggerRttUpBuffer[BUFFER_SIZE_UP];
 char seggerRttDownBuffer[BUFFER_SIZE_DOWN];
+Sim800Handle_t* Sim800Handle = NULL;
+
+DiscreteInput_t* pUserButton;
+DiscreteInput_t* pButtonReset;
+DiscreteInput_t* pTamper;
+
+DiscreteOutput_t* pRelay_1;
+DiscreteOutput_t* pRelay_2;
+DiscreteOutput_t* pUserLed;
+
+uint32_t timestamp;
 
 /* USER CODE END PV */
 
@@ -63,41 +74,7 @@ static void MX_USART2_UART_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-// Пример функции для вывода символа на дисплей
-void display_char(unsigned char c) {
-  // Здесь должна быть логика для вывода символа на дисплей
-  // Например, отправка команды в драйвер дисплея
-  debug_printf("%c", c);  // Для демонстрации выводим символ в консоль
-}
 
-// Пример функции для декодирования UTF-8 и вывода строки на дисплей
-void display_utf8_string(const char *s) {
-  while (*s) {
-    unsigned char c = *s++;
-    if ((c & 0x80) == 0) {
-      // Однобайтовый символ (ASCII)
-      display_char(c);
-    } else if ((c & 0xE0) == 0xC0) {
-      // Двухбайтовый символ
-      unsigned char c2 = *s++;
-      unsigned char value = ((c & 0x1F) << 6) | (c2 & 0x3F);
-      display_char(value);
-    } else if ((c & 0xF0) == 0xE0) {
-      // Трехбайтовый символ
-      unsigned char c2 = *s++;
-      unsigned char c3 = *s++;
-      unsigned char value = ((c & 0x0F) << 12) | ((c2 & 0x3F) << 6) | (c3 & 0x3F);
-      display_char(value);
-    } else if ((c & 0xF8) == 0xF0) {
-      // Четырехбайтовый символ
-      unsigned char c2 = *s++;
-      unsigned char c3 = *s++;
-      unsigned char c4 = *s++;
-      unsigned char value = ((c & 0x07) << 18) | ((c2 & 0x3F) << 12) | ((c3 & 0x3F) << 6) | (c4 & 0x3F);
-      display_char(value);
-    }
-  }
-}
 /* USER CODE END 0 */
 
 /**
@@ -131,9 +108,19 @@ int main(void)
   MX_GPIO_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
+  device_create();
+
   EepromInFlash.init();
+  Device.init();
   Sim800Handle = sim800_init();
-  user_button =	button_init(ButtonActiveLevel_HIGH, BUTTON_SEND_SMS_ID);
+
+  pUserButton =	discrete_input_init(DiscreteInputActiveLevel_LOW, BUTTON_SEND_SMS_ID);
+  pButtonReset = discrete_input_init(DiscreteInputActiveLevel_LOW, BUTTON_RESET_ID);
+  pTamper = discrete_input_init(DiscreteInputActiveLevel_LOW,BUTTON_TAMPER_ID);
+
+  pRelay_1 = discrete_output_init(DiscreteOutputActiveLevel_HIGH, RELAY_1_ID);
+  pRelay_2 = discrete_output_init(DiscreteOutputActiveLevel_HIGH, RELAY_2_ID);
+  pUserLed = discrete_output_init(DiscreteOutputActiveLevel_HIGH, USER_LED_ID);
 
   /* USER CODE END 2 */
 
@@ -144,7 +131,12 @@ int main(void)
     // debug_printf("Hello, world\n");
     // HAL_Delay(1000);
     sim800_run(Sim800Handle);
-    button_run(&user_button);
+    discrete_input_run(pUserButton);
+    discrete_input_run(pButtonReset);
+    discrete_input_run(pTamper);
+    discrete_output_run(pRelay_1);
+    discrete_output_run(pRelay_2);
+    discrete_output_run(pUserLed);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -269,9 +261,16 @@ static void MX_GPIO_Init(void)
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
+  __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(SIM800_RESET_GPIO_Port, SIM800_RESET_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(USER_LED_GPIO_Port, USER_LED_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOB, RELAY_2_Pin|RELAY_1_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : SEND_SMS_BTN_Pin */
   GPIO_InitStruct.Pin = SEND_SMS_BTN_Pin;
@@ -285,6 +284,26 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(SIM800_RESET_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : RESET_BTN_Pin TAMPER_BTN_Pin */
+  GPIO_InitStruct.Pin = RESET_BTN_Pin|TAMPER_BTN_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : USER_LED_Pin */
+  GPIO_InitStruct.Pin = USER_LED_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(USER_LED_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : RELAY_2_Pin RELAY_1_Pin */
+  GPIO_InitStruct.Pin = RELAY_2_Pin|RELAY_1_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
 
