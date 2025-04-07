@@ -63,10 +63,6 @@ extern "C" {
 #define debug_printf(...)
 #endif // DEBUG
 
-#define BUTTON_SEND_SMS_CLOCK_ENA()   __HAL_RCC_GPIOC_CLK_ENABLE()
-#define BUTTON_SEND_SMS_PIN           GPIO_PIN_13
-#define BUTTON_SEND_SMS_PORT          GPIOC
-
 /* USER CODE END EM */
 
 /* Exported functions prototypes ---------------------------------------------*/

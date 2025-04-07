@@ -26,7 +26,6 @@
 #include "discrete_input.h"
 #include "discrete_output.h"
 #include "eeprom_in_flash.h"
-#include "utf8_xcoder.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -53,13 +52,13 @@ char seggerRttUpBuffer[BUFFER_SIZE_UP];
 char seggerRttDownBuffer[BUFFER_SIZE_DOWN];
 Sim800Handle_t* Sim800Handle = NULL;
 
-DiscreteInput_t user_button;
-DiscreteInput_t buttonReset;
-DiscreteInput_t buttonTamper;
+DiscreteInput_t* pUserButton;
+DiscreteInput_t* pButtonReset;
+DiscreteInput_t* pTamper;
 
-Signal_t relay_1;
-Signal_t relay_2;
-Signal_t userLed;
+DiscreteOutput_t* pRelay_1;
+DiscreteOutput_t* pRelay_2;
+DiscreteOutput_t* pUserLed;
 
 uint32_t timestamp;
 
@@ -115,15 +114,13 @@ int main(void)
   Device.init();
   Sim800Handle = sim800_init();
 
-  user_button =	discrete_input_init(DiscreteInputActiveLevel_HIGH, BUTTON_SEND_SMS_ID);
-  buttonReset = discrete_input_init(DiscreteInputActiveLevel_HIGH, BUTTON_RESET_ID);
-  buttonTamper = discrete_input_init(DiscreteInputActiveLevel_HIGH,BUTTON_TAMPER_ID);
+  pUserButton =	discrete_input_init(DiscreteInputActiveLevel_LOW, BUTTON_SEND_SMS_ID);
+  pButtonReset = discrete_input_init(DiscreteInputActiveLevel_LOW, BUTTON_RESET_ID);
+  pTamper = discrete_input_init(DiscreteInputActiveLevel_LOW,BUTTON_TAMPER_ID);
 
-  // relay_1 = signal_init(SignalActiveLevel_HIGH, SIGNAL_RELAY_1_ID, NULL);
-  // relay_2 = signal_init(SignalActiveLevel_HIGH, SIGNAL_RELAY_2_ID, NULL);
-  // userLed = signal_init(SignalActiveLevel_HIGH, SIGNAL_USER_LED_ID, NULL);
-
-  timestamp = HAL_GetTick();
+  pRelay_1 = discrete_output_init(DiscreteOutputActiveLevel_HIGH, RELAY_1_ID);
+  pRelay_2 = discrete_output_init(DiscreteOutputActiveLevel_HIGH, RELAY_2_ID);
+  pUserLed = discrete_output_init(DiscreteOutputActiveLevel_HIGH, USER_LED_ID);
 
   /* USER CODE END 2 */
 
@@ -134,20 +131,12 @@ int main(void)
     // debug_printf("Hello, world\n");
     // HAL_Delay(1000);
     // sim800_run(Sim800Handle);
-    discrete_input_run(&user_button);
-    discrete_input_run(&buttonReset);
-    discrete_input_run(&buttonTamper);
-    // signal_run(&relay_1);
-    // signal_run(&relay_2);
-    // signal_run(&userLed);
-
-    if (HAL_GetTick() - timestamp > 1000) {
-      timestamp = HAL_GetTick();
-
-      // signal_toggle(&relay_1);
-      // signal_toggle(&relay_2);
-      // signal_toggle(&userLed);
-    }
+    discrete_input_run(pUserButton);
+    discrete_input_run(pButtonReset);
+    discrete_input_run(pTamper);
+    discrete_output_run(pRelay_1);
+    discrete_output_run(pRelay_2);
+    discrete_output_run(pUserLed);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
