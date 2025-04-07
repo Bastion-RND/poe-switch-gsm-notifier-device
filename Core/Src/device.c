@@ -2,7 +2,7 @@
 #include <string.h>
 
 #include "device.h"
-
+#include "exported.h"
 #include "eeprom_in_flash.h"
 
 static Config_t Config;
@@ -152,7 +152,13 @@ static void cmd_r_parse(char* phone_number, char* text) {
         }
         stage++;
     }
-    debug_printf("[Device] Change relay state: RL1: %d, RL2: %d\n", relay_1_state, relay_2_state);
+    debug_printf("[Device] change relay state: RL1: %d, RL2: %d\n", relay_1_state, relay_2_state);
+    if (relay_1_state >= 0) {
+        discrete_output_set(pRelay_1, (bool)relay_1_state);
+    }
+    if (relay_2_state >= 0) {
+        discrete_output_set(pRelay_2, (bool)relay_2_state);
+    }
 }
 
 static void cmd_c_parse(char* phone_number, char* text) {
