@@ -130,7 +130,7 @@ int main(void)
   {
     // debug_printf("Hello, world\n");
     // HAL_Delay(1000);
-    // sim800_run(Sim800Handle);
+    sim800_run(Sim800Handle);
     discrete_input_run(pUserButton);
     discrete_input_run(pButtonReset);
     discrete_input_run(pTamper);
