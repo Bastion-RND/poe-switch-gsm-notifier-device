@@ -8,6 +8,8 @@ static void switch_gsm_state(Sim800Handle_t *, sim800GsmState_t);
 static void switch_sms_state(Sim800Handle_t *, sim800SmsState_t);
 static void gsm_init_process(Sim800Handle_t *, Sim800Event_t, void *);
 
+bool flag = false;  // FIXME fix initialization procedure
+
 static void no_carrier_parser(Sim800Handle_t *p, const char *str, void *param) {
   debug_printf("< %s > %s\n", __func__, str);
   switch_gsm_state(p, SIM800_GSM_STATE_READY);
@@ -167,6 +169,12 @@ void sim800_gsm_run(Sim800Handle_t *p) {
     break;
 
   case SIM800_GSM_STATE_INITIALIZATION:
+    if (!flag) {
+      if (!sim800_is_locked(p) && p->Gsm.Sms.State == SIM800_SMS_STATE_IDLE) {
+        sim800_cmd(p, "AT+CSMP=17,167,0,25\n", 1000, NULL, NULL, SIM800_FLOW_ASYNC);
+        flag = true;
+      }
+    }
     break; /* event-driven waiting */
 
   case SIM800_GSM_STATE_NOT_REGISTERED:
