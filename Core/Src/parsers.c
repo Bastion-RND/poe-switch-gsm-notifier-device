@@ -34,83 +34,59 @@ bool parse_action(const char* text, bool* action) {
     return result;
 }
 
-static void cmd_a_parse(char* phone_number, char* text) {
-    bool action  = false;
-    int stage    = 0;
-    char* txtPtr = text;
-    if (strlen(text) != 2)
-        return;
-    if (!check_phone_number(phone_number))
-        return;
-    while (stage < 2) {
-        switch (stage) {
-            case 0:
-                if (!check_comma(txtPtr)) {
-                    return;
-                }
-                break;
-
-            case 1:
-                if (!parse_action(txtPtr, &action)) {
-                    return;
+static bool cmd_a_parse(char* ptrPhoneNum, char* ptrTxt) {
+    bool action = false;
+    bool result = false;
+    if (strlen(ptrTxt) == 2 && check_phone_number(ptrPhoneNum)) {
+        while (*ptrTxt != '\0') {
+            if (*ptrTxt != ',') {
+                if (!parse_action(ptrTxt, &action)) {
+                    break;
                 }
                 if (action) {
-                    debug_printf("[Device] Auto bind to %s\n", phone_number);
-                    Device.bind(phone_number);
+                    Device.bind(ptrPhoneNum);
                 } else {
-                    debug_printf("[Device] Auto unbind from %s\n", phone_number);
-                    Device.unbind(phone_number);
+                    Device.unbind(ptrPhoneNum);
                 }
-                break;
-
-            default:
-                return;
+                result = true;
+            }
+            ptrTxt++;
         }
-        txtPtr++;
-        stage++;
     }
+    return result;
 }
 
-static void cmd_b_parse(char* text) {
+static bool cmd_b_parse(char* ptrTxt) {
+    bool result = false;
     bool action  = false;
-    int stage    = 0;
-    if (strlen(text) != 15)
-        return;
-    while (stage < 4) {
-        switch (stage) {
-            case 0:
-            case 2:
-                if (!check_comma(text)) {
-                    return;
-                }
-                break;
-
-            case 1:
-                if (!parse_action(text, &action)) {
-                    return;
-                }
-                break;
-
-            case 3:
-                if (check_phone_number(text)) {
-                    if (action) {
-                        debug_printf("[Device] Manual bind to %s\n", text);
-                        Device.bind(text);
-                    } else {
-                        debug_printf("[Device] Manual unbind from %s\n", text);
-                        Device.unbind(text);
+    int stage = 0;
+    if (strlen(ptrTxt) == 15) {
+        while (*ptrTxt != '\0') {
+            if (*ptrTxt != ',') {
+                if (stage == 0) {
+                    if (!parse_action(ptrTxt, &action)) {
+                        break;
                     }
+                    stage = 1;
+                } else {
+                    if (!check_phone_number(ptrTxt)) {
+                        break;
+                    }
+                    if (action) {
+                        Device.bind(ptrTxt);
+                    } else {
+                        Device.unbind(ptrTxt);
+                    }
+                    result = true;
                 }
-
-            default:
-                return;
+            }
+            ptrTxt++;
         }
-        text++;
-        stage++;
     }
+    return result;
 }
 
-bool parse_relay_state(const char* text, int* state) {
+static bool parse_relay_state(const char* text, int* state) {
     bool result = false;
     if (*text == '1') {
         *state = 1;
@@ -125,48 +101,38 @@ bool parse_relay_state(const char* text, int* state) {
     return result;
 }
 
-static void cmd_r_parse(char* phone_number, char* text) {
+static bool cmd_r_parse(const char* ptrPhoneNum, char* ptrTxt) {
+    (void)ptrPhoneNum;
     int relay_1_state = -1;
     int relay_2_state = -1;
-
+    bool result = false;
     int stage         = 0;
-    char* txtPtr      = text;
-    if (strlen(text) != 4)
-        return;
-    while (stage < 2) {
-        if (*txtPtr == ',') {
-            txtPtr++;
-            continue;
-        }
-        if (*txtPtr == '\0') {
-            break;
-        }
-        switch (stage) {
-            case 0:
-                if (!parse_relay_state(txtPtr, &relay_1_state)) {
-                    return;
-                }
-                txtPtr++;
-                break;
 
-            case 1:
-                if (!parse_relay_state(txtPtr, &relay_2_state)) {
-                    return;
+    if (strlen(ptrTxt) == 4) {
+        while (*ptrTxt != '\0') {
+            if (*ptrTxt != ',') {
+                if (stage == 0) {
+                    if (!parse_relay_state(ptrTxt, &relay_1_state)) {
+                        break;
+                    }
+                    stage = 1;
+                } else {
+                    if (!parse_relay_state(ptrTxt, &relay_2_state)) {
+                        break;
+                    }
+                    result = true;
                 }
-                break;
-
-            default:
-                return;
+            }
+            ptrTxt++;
         }
-        stage++;
     }
-    debug_printf("[Device] change relay state: RL1: %d, RL2: %d\n", relay_1_state, relay_2_state);
     if (relay_1_state >= 0) {
         discrete_output_set(pRelay_1, (bool)relay_1_state);
     }
     if (relay_2_state >= 0) {
         discrete_output_set(pRelay_2, (bool)relay_2_state);
     }
+    return result;
 }
 
 static void cmd_c_parse(char* phone_number, char* text) {
@@ -242,45 +208,43 @@ static void cmd_c_parse(char* phone_number, char* text) {
                  deviceName, notifyPermissions, batteryLevel);
 }
 
-static void single_char_cmd_parser(char* phone_number, const char c) {
-    switch (c) {
-        case 'l':
-            debug_printf("[Device] Get numbers list for %s\n", phone_number);
+void on_new_sms_callback(char* ptrPhoneNum, char* ptrTxt) {
+    debug_printf("[Parsers] Start, phone: <%s>, text: <%s>\n", ptrPhoneNum, ptrTxt);
+    bool result = false;
+    if (*ptrTxt == '$') {
+        ptrTxt++;
+        if (strlen(ptrTxt) >= 1) {
+            switch (*ptrTxt) {
+            case 'a':
+                result = cmd_a_parse(ptrPhoneNum, ++ptrTxt);
             break;
-        case 'g':
-            debug_printf("[Device] Get config for %s\n", phone_number);
+            case 'b':
+                result = cmd_b_parse(++ptrTxt);
             break;
-        default:
+            case 'c':
+                cmd_c_parse(ptrPhoneNum, ++ptrTxt);
             break;
-    }
-}
-
-void command_parser(char* phone_number, char* text) {
-    debug_printf("[Device] command parser start, phone: %s, text: %s\n", phone_number, text);
-    char* textPtr = text;
-    if (strlen(textPtr) >= 2 && *textPtr == '$') {
-        textPtr++;
-        if (strlen(textPtr) == 1) {
-            single_char_cmd_parser(phone_number, *textPtr);
-        } else {
-            switch (*textPtr) {
-                case 'a':
-                    cmd_a_parse(phone_number, ++textPtr);
-                    break;
-                case 'b':
-                    cmd_b_parse(++textPtr);
-                    break;
-                case 'c':
-                    cmd_c_parse(phone_number, ++textPtr);
-                    break;
-                case 'r':
-                    cmd_r_parse(phone_number, ++textPtr);
-                    break;
-                default:
-                    break;
+            case 'r':
+                result = cmd_r_parse(ptrPhoneNum, ++ptrTxt);
+            break;
+            case 'l':
+                if (strlen(ptrTxt) == 1) {
+                    debug_printf("[Device] Get numbers list for %s\n", ptrPhoneNum);
+                    result = true;
+                }
+            break;
+            case 'g':
+                if (strlen(ptrTxt) == 1) {
+                    debug_printf("[Device] Get config for %s\n", ptrPhoneNum);
+                    result = true;
+                }
+            break;
+            default:
+                break;
             }
         }
     }
+    if (!result) {
+        debug_printf("[Parsers] Error while parsing\n");
+    }
 }
-
-void on_new_sms_callback(char* phone_number, char* sms_text) { command_parser(phone_number, sms_text); }

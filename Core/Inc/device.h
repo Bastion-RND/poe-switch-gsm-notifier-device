@@ -24,7 +24,6 @@ typedef struct Device_ {
   void 	(*unbind)(const char*);
   uint8_t phoneCount;
   Phone_t phoneBook[MAX_PHONE_COUNT];
-  bool phoneIdxExists[MAX_PHONE_COUNT];
   bool resetEvent;
   bool tamperEvent;
   DeviceState_t State;
