@@ -596,12 +596,12 @@ __attribute__((weak)) void on_pin_checked_callback(const char *status) {
 }
 
 __attribute__((weak)) void on_new_sms_callback(
-    const char *phone_number,
-    const char *sms_text
+    char *ptrPhoneNum,
+    char *ptrTxt
     ) {
     debug_printf(
         "[SIM800] on new SMS callback, number: <%s>, text: <%s>\n",
-        phone_number,
-        sms_text
+        ptrPhoneNum,
+        ptrTxt
         );
 }

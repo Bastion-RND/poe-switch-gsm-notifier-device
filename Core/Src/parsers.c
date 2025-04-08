@@ -203,9 +203,12 @@ static void cmd_c_parse(char* phone_number, char* text) {
         }
         stage++;
     }
-    debug_printf("[Device] New config: device name <%s>, permissions <%s>, "
-                 "battery voltage <%f>",
-                 deviceName, notifyPermissions, batteryLevel);
+    char *endPtr;
+    uint8_t permissions = (uint8_t)strtol(&notifyPermissions[0], &endPtr, 2);
+    if (*endPtr != '\0') {
+        return;
+    }
+    Device.config_save(deviceName, permissions, batteryLevel);
 }
 
 void on_new_sms_callback(char* ptrPhoneNum, char* ptrTxt) {
@@ -223,6 +226,7 @@ void on_new_sms_callback(char* ptrPhoneNum, char* ptrTxt) {
             break;
             case 'c':
                 cmd_c_parse(ptrPhoneNum, ++ptrTxt);
+                result = true;
             break;
             case 'r':
                 result = cmd_r_parse(ptrPhoneNum, ++ptrTxt);
@@ -235,7 +239,7 @@ void on_new_sms_callback(char* ptrPhoneNum, char* ptrTxt) {
             break;
             case 'g':
                 if (strlen(ptrTxt) == 1) {
-                    debug_printf("[Device] Get config for %s\n", ptrPhoneNum);
+                    Device.config_get(ptrPhoneNum);
                     result = true;
                 }
             break;
