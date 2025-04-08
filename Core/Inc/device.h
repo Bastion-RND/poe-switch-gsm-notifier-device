@@ -5,20 +5,25 @@
 
 #include "main.h"
 
+#define MAX_PHONE_COUNT 15
+#define PHONE_LENGTH    12
+
 typedef enum DeviceState_ {
   DEVICE_STATE_UNDEFINED = 0,
   DEVICE_STATE_IDLE,
 } DeviceState_t;
 
 typedef struct Phone_ {
-  uint8_t number[13];
+  char number[PHONE_LENGTH + 1];
 } Phone_t;
 
 typedef struct Device_ {
   void 	(*init)(void);
   void 	(*run)(void);
+  void 	(*bind)(const char*);
+  void 	(*unbind)(const char*);
   uint8_t phoneCount;
-  Phone_t phoneBook[50];
+  Phone_t phoneBook[MAX_PHONE_COUNT];
   bool resetEvent;
   bool tamperEvent;
   DeviceState_t State;
@@ -32,11 +37,8 @@ typedef struct Config_ {
 } Config_t;
 #pragma pack(pop)
 
-#define MAX_PHONE_COUNT 50
-
 #define EEPROM_ADDR_CONFIG 0
-#define EEPROM_ADDR_PHONE_COUNT (EEPROM_ADDR_CONFIG + sizeof(Config_t))
-#define EEPROM_ADDR_PHONE_BOOK  (EEPROM_ADDR_PHONE_COUNT + sizeof(uint8_t))
+#define EEPROM_ADDR_PHONE_BOOK  (EEPROM_ADDR_CONFIG + sizeof(Config_t))
 
 extern Device_t Device;
 
