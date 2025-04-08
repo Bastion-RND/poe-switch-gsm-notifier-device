@@ -154,19 +154,27 @@ static void csq_parser(Sim800Handle_t* p, const char *str, void *param) {
     on_rssi_updated_callback(p->Module.RSSI.dBm);
 }
 
-static void usc2_to_ascii(char* src, char* dest) {
+static void usc2_to_utf8(char* src, char* dest) {
     int counter = (int)strlen(src);
     if (counter % 4 != 0) {
         debug_printf("[%s] error char counter\n", __func__);
     } else {
         while (counter) {
-            char c = (str_to_code_point(&src) & 0x7F);
             counter -= 4;
-            *dest=c;
-            dest++;
+            uint16_t cp = str_to_code_point(&src);
+            if (cp <= 0x7F) {
+                char c = cp & 0x7F;
+                *dest=c;
+                dest++;
+            } else if (cp <= 0x7FF) {
+                *dest = (char)(0xC0 | (cp >> 6));
+                dest++;
+                *dest = (char)(0x80 | (cp & 0x3F));
+                dest++;
+            }
         }
+        *dest = '\0';
     }
-    *dest = '\0';
 }
 
 char* extract_quoted_part(const char *input, char *output, size_t output_size) {
@@ -193,11 +201,11 @@ static void cmt_parser(Sim800Handle_t* p, const char* message_header, void *para
 
     char phone[48 + 1]; /* (12 chars * 4) + \0 */
     extract_quoted_part(message_header, phone, sizeof(phone));
-    usc2_to_ascii(phone, p->Gsm.Sms.Recv.phone);
+    usc2_to_utf8(phone, p->Gsm.Sms.Recv.phone);
 
     char message_body[280 + 1]; /* (140 byte * 2 char/byte) + \0 */
     sim800_readline(p, message_body, sizeof(message_body), 1000);
-    usc2_to_ascii(message_body, p->Gsm.Sms.Recv.message);
+    usc2_to_utf8(message_body, p->Gsm.Sms.Recv.message);
 
     on_new_sms_callback(p->Gsm.Sms.Recv.phone, p->Gsm.Sms.Recv.message);
 }
