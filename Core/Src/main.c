@@ -152,8 +152,8 @@ int main(void)
     Device.run();
     if (HAL_GetTick() - timestamp > 5000) {
       timestamp = HAL_GetTick();
-      debug_printf("Battery voltage: %d mV\n", (int)(Adc.getVoltageBattery() * 1000));
-      debug_printf("Battery 220: %d mV\n", (int)(Adc.getVoltage220() * 1000));
+      // debug_printf("Battery voltage: %d mV\n", (int)(Adc.getVoltageBattery() * 1000));
+      // debug_printf("Battery 220: %d mV\n", (int)(Adc.getVoltage220() * 1000));
     }
     /* USER CODE END WHILE */
 

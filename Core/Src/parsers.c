@@ -208,7 +208,7 @@ static void cmd_c_parse(char* phone_number, char* text) {
     if (*endPtr != '\0') {
         return;
     }
-    Device.config_save(deviceName, permissions, batteryLevel);
+    Device.config_set(deviceName, permissions, batteryLevel);
 }
 
 void on_new_sms_callback(char* ptrPhoneNum, char* ptrTxt) {

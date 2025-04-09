@@ -10,29 +10,62 @@
 #define MAX_DEVICE_NAME_LENGTH    64
 #define NOTIFY_PERMISSION_LENGTH  4
 
+#define SINGLE_SMS_LENGTH_MAX     (70 * 2 + 1)
+
 typedef enum DeviceState_ {
   DEVICE_STATE_UNDEFINED = 0,
   DEVICE_STATE_IDLE,
+  DEVICE_STATE_SENDING_SINGLE_SMS,
+  DEVICE_STATE_SENDING_MULTIPLY_SMS,
+  DEVICE_STATE_AWAIT_RESPONSE,
 } DeviceState_t;
+
+typedef enum DeviceEvent_ {
+  DeviceEvent_Tamper = 0,
+  DeviceEvent_NoPower220,
+  DeviceEvent_LowBatt,
+  DeviceEvent_Relay1On,
+  DeviceEvent_Relay1Off,
+  DeviceEvent_Relay2On,
+  DeviceEvent_Relay2Off,
+} DeviceEvent_t;
+
+#define MAX_EVENTS_COUNT 7
 
 typedef struct Phone_ {
   char number[PHONE_LENGTH + 1];
 } Phone_t;
+
+typedef struct DeviceEventHandler_ {
+  bool request;
+  char* txt;
+  uint32_t timestampMs;
+  uint32_t minTimeRepeatMs;
+} DeviceEventHandler_t;
+
+typedef struct SmsSender_ {
+  char* ptrPhoneNumber;
+  char txt[SINGLE_SMS_LENGTH_MAX];
+  int eventHandlerIdx;
+  int phoneCount;
+  int phoneIdx;
+} SmsSender_t;
 
 typedef struct Device_ {
   void 	(*init)(void);
   void 	(*run)(void);
   void 	(*bind)(const char*);
   void 	(*unbind)(const char*);
-  void  (*config_save)(char*, uint8_t, float);
+  void  (*config_set)(char*, uint8_t, float);
   void  (*config_get)(char*);
+  void  (*append_event)(DeviceEvent_t);
   uint8_t phoneCount;
   Phone_t phoneBook[MAX_PHONE_COUNT];
+  DeviceEventHandler_t eventHandlers[MAX_EVENTS_COUNT];
+  SmsSender_t smsSender;
   bool resetEvent;
-  bool tamperEvent;
   bool configGetRequest;
   Phone_t requestedPhone;
-  bool smsMutex;
   DeviceState_t State;
 } Device_t;
 
