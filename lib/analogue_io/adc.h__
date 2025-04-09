@@ -1,0 +1,37 @@
+#ifndef ANALOGUE_INPUT_H
+#define ANALOGUE_INPUT_H
+
+#include <stdint.h>
+#include <stdbool.h>
+
+#include "adc.h__"
+
+typedef enum AnalogueInputState_ {
+    AnalogueInputState_Disabled 	= -1,
+    AnalogueInputState_Undefined 	=  0,
+    AnalogueInputState_Idle,
+    AnalogueInputState_ConversionWaiting,
+} AnalogueInputState_t;
+
+typedef struct AnalogueInput_ {
+    uint8_t                 id;
+    AnalogueInputState_t    State;
+    struct {
+        float       value;
+        bool        initialized;
+        uint32_t    smoothWindow;
+    } MovingAverage;
+    uint32_t                timestamp;
+    uint32_t                pollPeriod;
+} AnalogueInput_t;
+
+AnalogueInput_t*    analogue_input_init(uint32_t smoothWindow, uint32_t pollPeriodMs, uint8_t id);
+void                analogue_input_run(AnalogueInput_t*);
+float               analogue_input_get_value(AnalogueInput_t*);
+
+bool                analogue_input_ll_init(AnalogueInput_t*);
+bool                analogue_input_ll_start_conv(AnalogueInput_t* p);
+bool                analogue_input_ll_get_value(AnalogueInput_t* p, uint32_t* val);
+uint32_t            analogue_input_ll_get_tick();
+
+#endif //ANALOGUE_INPUT_H

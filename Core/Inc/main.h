@@ -75,6 +75,10 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 #define SEND_SMS_BTN_Pin GPIO_PIN_13
 #define SEND_SMS_BTN_GPIO_Port GPIOC
+#define ADC_AKB_Pin GPIO_PIN_0
+#define ADC_AKB_GPIO_Port GPIOA
+#define ADC_220_Pin GPIO_PIN_1
+#define ADC_220_GPIO_Port GPIOA
 #define RESET_BTN_Pin GPIO_PIN_8
 #define RESET_BTN_GPIO_Port GPIOA
 #define USER_LED_Pin GPIO_PIN_9
