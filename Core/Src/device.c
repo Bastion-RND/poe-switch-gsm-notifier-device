@@ -233,15 +233,15 @@ static void run() {
 
         case DEVICE_STATE_SENDING_MULTIPLY_SMS:
             Device.smsSender.ptrPhoneNumber = get_phone_num_by_idx(Device.smsSender.phoneIdx);
-        if (Device.smsSender.ptrPhoneNumber == NULL) {
-            Device.eventHandlers[Device.smsSender.handlerIdx].active = false;
-            Device.eventHandlers[Device.smsSender.handlerIdx].timestampMs = HAL_GetTick();
-            Device.State = DEVICE_STATE_IDLE; /* all subscribers have been served */
-        }
-        else if (sim800_sms_send(Sim800Handle, Device.smsSender.ptrPhoneNumber, Device.smsSender.txt, wait_for_multiply_sms_response)) {
-            Device.smsSender.phoneIdx++;
-            Device.State = DEVICE_STATE_AWAIT_RESPONSE;
-        }
+            if (Device.smsSender.ptrPhoneNumber == NULL) {
+                Device.eventHandlers[Device.smsSender.handlerIdx].active = false;
+                Device.eventHandlers[Device.smsSender.handlerIdx].timestampMs = HAL_GetTick();
+                Device.State = DEVICE_STATE_IDLE; /* all subscribers have been served */
+            }
+            else if (sim800_sms_send(Sim800Handle, Device.smsSender.ptrPhoneNumber, Device.smsSender.txt, wait_for_multiply_sms_response)) {
+                Device.smsSender.phoneIdx++;
+                Device.State = DEVICE_STATE_AWAIT_RESPONSE;
+            }
         break;
 
         case DEVICE_STATE_SENDING_SINGLE_SMS:
