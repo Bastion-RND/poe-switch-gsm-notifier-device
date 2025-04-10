@@ -10,7 +10,7 @@
 #define MAX_DEVICE_NAME_LENGTH    64
 #define NOTIFY_PERMISSION_LENGTH  4
 
-#define SINGLE_SMS_LENGTH_MAX     (70 * 2 + 1)
+#define SINGLE_SMS_LENGTH_MAX     (256 * 2 - 1)
 
 typedef enum DeviceState_ {
   DEVICE_STATE_UNDEFINED = 0,
@@ -38,7 +38,7 @@ typedef struct Phone_ {
 
 typedef struct DeviceEventHandler_ {
   bool request;
-  char* txt;
+  const char* txt;
   uint32_t timestampMs;
   uint32_t minTimeRepeatMs;
 } DeviceEventHandler_t;

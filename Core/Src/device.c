@@ -11,6 +11,13 @@
 static Config_t Config;
 Device_t Device;
 
+const char* tamperTxt = "[%s]Дверца шкафа открыта\n%s";
+const char* noPower220Txt = "[%s]Пропало напряжение питания 220В\n%s";
+const char* lowBatteryTxt = "[%s]Низкий заряд АКБ, %.1fВ\n%s";
+const char* relayOnTxt = "[%s]Включено реле %d\n%s";
+const char* relayOffTxt = "[%s]Отключено реле %d\n%s";
+const char* unsubscribeTxt = "Для отписки отправьте: $a,0";
+
 static void init() {
     uint16_t tag = 0;
     EepromInFlash.read(EEPROM_ADDR_INIT_TAG, (uint8_t*) &tag, sizeof(tag));
@@ -46,31 +53,31 @@ static void init() {
     for (int i = 0; i < MAX_EVENTS_COUNT; i++) {
         switch ((DeviceEvent_t)i) {
             case DeviceEvent_Tamper:
-                Device.eventHandlers[i].txt = "Дверца шкафа открыта";
+                Device.eventHandlers[i].txt = tamperTxt;
                 Device.eventHandlers[i].minTimeRepeatMs = 10000;
             break;
             case DeviceEvent_NoPower220:
-                Device.eventHandlers[i].txt = "Пропало напряжение питания 220В";
+                Device.eventHandlers[i].txt = noPower220Txt;
                 Device.eventHandlers[i].minTimeRepeatMs = 10000;
             break;
             case DeviceEvent_LowBatt:
-                Device.eventHandlers[i].txt = "Низкий заряд АКБ";
+                Device.eventHandlers[i].txt = lowBatteryTxt;
                 Device.eventHandlers[i].minTimeRepeatMs = 10000;
             break;
             case DeviceEvent_Relay1On:
-                Device.eventHandlers[i].txt = "Включено реле 1";
+                Device.eventHandlers[i].txt = relayOnTxt;
                 Device.eventHandlers[i].minTimeRepeatMs = 10000;
             break;
             case DeviceEvent_Relay1Off:
-                Device.eventHandlers[i].txt = "Отключено реле 1";
+                Device.eventHandlers[i].txt = relayOffTxt;
                 Device.eventHandlers[i].minTimeRepeatMs = 10000;
             break;
             case DeviceEvent_Relay2On:
-                Device.eventHandlers[i].txt = "Включено реле 2";
+                Device.eventHandlers[i].txt = relayOnTxt;
                 Device.eventHandlers[i].minTimeRepeatMs = 10000;
             break;
             case DeviceEvent_Relay2Off:
-                Device.eventHandlers[i].txt = "Отключено реле 2";
+                Device.eventHandlers[i].txt = relayOffTxt;
                 Device.eventHandlers[i].minTimeRepeatMs = 10000;
             break;
         }
@@ -122,6 +129,45 @@ static char* get_phone_num_by_idx(int idx) {
     return NULL;
 }
 
+static void prepare_message(int i) {
+    switch ((DeviceEvent_t)i) {
+        case DeviceEvent_LowBatt:
+            snprintf(
+                Device.smsSender.txt,
+                SINGLE_SMS_LENGTH_MAX,
+                Device.eventHandlers[i].txt,
+                Config.name, Adc.getVoltageBattery(), unsubscribeTxt
+                );
+        break;
+        case DeviceEvent_Relay1On:
+        case DeviceEvent_Relay1Off:
+            snprintf(
+                Device.smsSender.txt,
+                SINGLE_SMS_LENGTH_MAX,
+                Device.eventHandlers[i].txt,
+                Config.name, 1, unsubscribeTxt
+                );
+        break;
+        case DeviceEvent_Relay2On:
+        case DeviceEvent_Relay2Off:
+            snprintf(
+                Device.smsSender.txt,
+                SINGLE_SMS_LENGTH_MAX,
+                Device.eventHandlers[i].txt,
+                Config.name, 2, unsubscribeTxt
+                );
+        break;
+        default:
+            snprintf(
+                Device.smsSender.txt,
+                SINGLE_SMS_LENGTH_MAX,
+                Device.eventHandlers[i].txt,
+                Config.name, unsubscribeTxt
+                );
+        break;
+    }
+}
+
 static void run() {
     switch (Device.State) {
         case DEVICE_STATE_IDLE:
@@ -130,7 +176,7 @@ static void run() {
                     uint32_t elapsed_time_ms = HAL_GetTick() - Device.eventHandlers[i].timestampMs;
                     bool ena_by_time = elapsed_time_ms >= Device.eventHandlers[i].minTimeRepeatMs;
                     if (!ena_by_time) {continue;}
-                    snprintf(Device.smsSender.txt, SINGLE_SMS_LENGTH_MAX, "[%s] %s", Config.name, Device.eventHandlers->txt);
+                    prepare_message(i);
                     Device.smsSender.eventHandlerIdx = i;
                     Device.smsSender.phoneCount = Device.phoneCount;
                     Device.smsSender.phoneIdx = 0;
