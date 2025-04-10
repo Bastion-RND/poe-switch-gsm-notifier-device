@@ -62,7 +62,7 @@ void
 discrete_input_opened_callback(DiscreteInput_t *p) {
     switch (p->id) {
         case BUTTON_TAMPER_ID:
-            Device.append_event(DeviceEvent_Tamper);
+            Device.event_append(DeviceEvent_Tamper);
             break;
 
         default:
