@@ -8,8 +8,15 @@
 #include "exported.h"
 #include "eeprom_in_flash.h"
 
-static Config_t Config;
+Config_t Config;
 Device_t Device;
+
+const char* tamperTxt = "[%s]Дверца шкафа открыта\n%s";
+const char* noPower220Txt = "[%s]Пропало напряжение питания 220В\n%s";
+const char* lowBatteryTxt = "[%s]Низкий заряд АКБ, %.1fВ\n%s";
+const char* relayOnTxt = "[%s]Включено реле %d\n%s";
+const char* relayOffTxt = "[%s]Отключено реле %d\n%s";
+const char* unsubscribeTxt = "Для отписки отправьте: $a,0";
 
 static void init() {
     uint16_t tag = 0;
@@ -42,42 +49,241 @@ static void init() {
         }
     }
     debug_printf("[Device] Initialized, total numbers count %d\n", Device.phoneCount);
-}
-
-static void send_sms_callback(Sim800SmsEvent_t ev) {
-    if (ev == SIM800_EVENT_SEND_SMS_SUCCESS) {
-        Device.configGetRequest = false;
-    }
-    Device.smsMutex = false;
-}
-
-static void config_pack(char* ptrTxt, size_t len) {
-    char strPermissions[4 + 1];
-    for (int i = 0; i < NOTIFY_PERMISSION_LENGTH; i++) {
-        int strIdx = 3 - i;
-        if (Config.permissions & (1 << i)) {
-            strPermissions[strIdx] = '1';
-        } else {
-            strPermissions[strIdx] = '0';
+    Device.State = DEVICE_STATE_IDLE;
+    for (int i = 0; i < MAX_EVENTS_COUNT; i++) {
+        switch ((DeviceEvent_t)i) {
+            case DeviceEvent_Tamper:
+                Device.eventHandlers[i].txt = tamperTxt;
+                Device.eventHandlers[i].minTimeRepeatMs = 10000;
+            break;
+            case DeviceEvent_NoPower220:
+                Device.eventHandlers[i].txt = noPower220Txt;
+                Device.eventHandlers[i].minTimeRepeatMs = 10000;
+            break;
+            case DeviceEvent_LowBatt:
+                Device.eventHandlers[i].txt = lowBatteryTxt;
+                Device.eventHandlers[i].minTimeRepeatMs = 10000;
+            break;
+            case DeviceEvent_Relay1On:
+                Device.eventHandlers[i].txt = relayOnTxt;
+                Device.eventHandlers[i].minTimeRepeatMs = 10000;
+            break;
+            case DeviceEvent_Relay1Off:
+                Device.eventHandlers[i].txt = relayOffTxt;
+                Device.eventHandlers[i].minTimeRepeatMs = 10000;
+            break;
+            case DeviceEvent_Relay2On:
+                Device.eventHandlers[i].txt = relayOnTxt;
+                Device.eventHandlers[i].minTimeRepeatMs = 10000;
+            break;
+            case DeviceEvent_Relay2Off:
+                Device.eventHandlers[i].txt = relayOffTxt;
+                Device.eventHandlers[i].minTimeRepeatMs = 10000;
+            break;
         }
     }
-    strPermissions[NOTIFY_PERMISSION_LENGTH] = '\0';
-    char battVoltage[4 + 1];
-    snprintf(battVoltage, sizeof(battVoltage), "%.1f", Config.batteryLowThreshold);
-    battVoltage[4] = '\0';
+    for (int i = 0; i < MAX_REQUEST_COUNT; i++) {
+        switch ((DeviceRequest_t)i) {
+            case DeviceRequest_Config:
+            case DeviceRequest_List:
+                Device.requestHandlers[i].minTimeRepeatMs = 10000;
+            break;
+        }
+    }
+}
 
-    snprintf(ptrTxt, len, "%s,%s,%s\0", Config.name, strPermissions, battVoltage);
-    ptrTxt[len - 1] = '\0';
+void wait_for_multiply_sms_response(Sim800SmsEvent_t ev) {
+    (void)ev;
+    Device.State = DEVICE_STATE_SENDING_MULTIPLY_SMS;
+}
+
+void wait_for_single_sms_response(Sim800SmsEvent_t ev) {
+    (void)ev;
+    Device.requestHandlers[Device.smsSender.handlerIdx].active = false;
+    Device.requestHandlers[Device.smsSender.handlerIdx].timestampMs = HAL_GetTick();
+    Device.State = DEVICE_STATE_IDLE;
+}
+
+static char* get_phone_num_by_idx(int idx) {
+    if (idx < Device.phoneCount) {
+        int foundedNumbers = -1;
+        for (int i = 0; i < Device.phoneCount; i++) {
+            if (Device.phoneBook[i].number[0] == '+') {
+                foundedNumbers++;
+                if (foundedNumbers == idx) {
+                    return Device.phoneBook[i].number;
+                }
+            }
+        }
+    }
+    return NULL;
+}
+
+static bool check_permissions(int i) {
+    bool result = false;
+    switch ((DeviceEvent_t)i) {
+        case DeviceEvent_LowBatt:
+            if (Config.permissions & (1 << LOW_BATTERY_EVENT_PERMISSION_POS)) result = true;
+        break;
+
+        case DeviceEvent_Relay1On:
+        case DeviceEvent_Relay1Off:
+        case DeviceEvent_Relay2On:
+        case DeviceEvent_Relay2Off:
+            if (Config.permissions & (1 << RELAY_EVENT_PERMISSION_POS)) result = true;
+        break;
+
+        case DeviceEvent_Tamper:
+            if (Config.permissions & (1 << TAMPER_EVENT_PERMISSION_POS)) result = true;
+        break;
+
+        case DeviceEvent_NoPower220:
+            if (Config.permissions & (1 << NO_220_EVENT_PERMISSION_POS)) result = true;
+        break;
+
+        default:
+            break;
+    }
+    return result;
+}
+
+static bool prepare_event_message(int i) {
+    bool result = false;
+    switch ((DeviceEvent_t)i) {
+        case DeviceEvent_LowBatt:
+            snprintf(
+                Device.smsSender.txt,
+                SINGLE_SMS_LENGTH_MAX,
+                Device.eventHandlers[i].txt,
+                Config.name, Adc.getVoltageBattery(), unsubscribeTxt
+                );
+            result = true;
+        break;
+        case DeviceEvent_Relay1On:
+        case DeviceEvent_Relay1Off:
+            snprintf(
+                Device.smsSender.txt,
+                SINGLE_SMS_LENGTH_MAX,
+                Device.eventHandlers[i].txt,
+                Config.name, 1, unsubscribeTxt
+                );
+            result = true;
+        break;
+        case DeviceEvent_Relay2On:
+        case DeviceEvent_Relay2Off:
+            snprintf(
+                Device.smsSender.txt,
+                SINGLE_SMS_LENGTH_MAX,
+                Device.eventHandlers[i].txt,
+                Config.name, 2, unsubscribeTxt
+                );
+            result = true;
+        break;
+        case DeviceEvent_Tamper:
+        case DeviceEvent_NoPower220:
+            snprintf(
+                Device.smsSender.txt,
+                SINGLE_SMS_LENGTH_MAX,
+                Device.eventHandlers[i].txt,
+                Config.name, unsubscribeTxt
+                );
+            result = true;
+        break;
+        default:
+        break;
+    }
+    return result;
+}
+
+static bool prepare_response_message(int request) {
+    bool result = false;
+    int idx = 0;
+    switch ((DeviceRequest_t)request) {
+        case DeviceRequest_Config:
+            char strPermissions[4 + 1];
+            for (idx = 0; idx < NOTIFY_PERMISSION_LENGTH; idx++) {
+                if (Config.permissions & (1 << idx)) {
+                    strPermissions[3 - idx] = '1';
+                } else {
+                    strPermissions[3 - idx] = '0';
+                }
+            }
+            strPermissions[NOTIFY_PERMISSION_LENGTH] = '\0';
+            char battVoltage[4 + 1];
+            snprintf(battVoltage, sizeof(battVoltage), "%.1f", Config.batteryLowThreshold);
+            battVoltage[4] = '\0';
+            snprintf(Device.smsSender.txt, SINGLE_SMS_LENGTH_MAX, "%s,%s,%s", Config.name, strPermissions, battVoltage);
+            result = true;
+            break;
+        case DeviceRequest_List:
+        default:
+            break;
+    }
+    return result;
 }
 
 static void run() {
-    if (Device.configGetRequest && !Device.smsMutex) {
-        if (!sim800_is_locked(Sim800Handle)) {
-            char msg[100] = {0};
-            config_pack(msg, sizeof(msg));
-            sim800_sms_send(Sim800Handle, Device.requestedPhone.number, msg, send_sms_callback);
-            Device.smsMutex = true;
-        }
+    switch (Device.State) {
+        case DEVICE_STATE_IDLE:
+            for (int i = 0; i < MAX_EVENTS_COUNT; i++) {
+                if (Device.eventHandlers[i].active) {
+                    uint32_t elapsed_time_ms = HAL_GetTick() - Device.eventHandlers[i].timestampMs;
+                    bool ena_by_time = elapsed_time_ms >= Device.eventHandlers[i].minTimeRepeatMs;
+                    if (!ena_by_time) {continue;}
+                    if (!check_permissions(i)) {
+                        Device.eventHandlers[i].active = false;
+                        continue;
+                    }
+                    prepare_event_message(i);
+                    if (!prepare_event_message(i)) {
+                        Device.eventHandlers[i].active = false;
+                        continue;
+                    }
+                    Device.smsSender.handlerIdx = i;
+                    Device.smsSender.phoneCount = Device.phoneCount;
+                    Device.smsSender.phoneIdx = 0;
+                    Device.State = DEVICE_STATE_SENDING_MULTIPLY_SMS;
+                    return;
+                }
+            }
+            for (int i = 0; i < MAX_REQUEST_COUNT; i++) {
+                if (Device.requestHandlers[i].active) {
+                    uint32_t elapsed_time_ms = HAL_GetTick() - Device.requestHandlers[i].timestampMs;
+                    bool ena_by_time = elapsed_time_ms >= Device.requestHandlers[i].minTimeRepeatMs;
+                    if (!ena_by_time) {continue;}
+                    if (!prepare_response_message(i)) {
+                        Device.requestHandlers[i].active = false;
+                        continue;
+                    }
+                    Device.smsSender.handlerIdx = i;
+                    Device.smsSender.ptrPhoneNumber = Device.requestHandlers[i].phone.number;
+                    Device.State = DEVICE_STATE_SENDING_SINGLE_SMS;
+                    return;;
+                }
+            }
+        break;
+
+        case DEVICE_STATE_SENDING_MULTIPLY_SMS:
+            Device.smsSender.ptrPhoneNumber = get_phone_num_by_idx(Device.smsSender.phoneIdx);
+            if (Device.smsSender.ptrPhoneNumber == NULL) {
+                Device.eventHandlers[Device.smsSender.handlerIdx].active = false;
+                Device.eventHandlers[Device.smsSender.handlerIdx].timestampMs = HAL_GetTick();
+                Device.State = DEVICE_STATE_IDLE; /* all subscribers have been served */
+            }
+            else if (sim800_sms_send(Sim800Handle, Device.smsSender.ptrPhoneNumber, Device.smsSender.txt, wait_for_multiply_sms_response)) {
+                Device.smsSender.phoneIdx++;
+                Device.State = DEVICE_STATE_AWAIT_RESPONSE;
+            }
+        break;
+
+        case DEVICE_STATE_SENDING_SINGLE_SMS:
+            if (sim800_sms_send(Sim800Handle, Device.smsSender.ptrPhoneNumber, Device.smsSender.txt, wait_for_single_sms_response)) {
+                Device.State = DEVICE_STATE_AWAIT_RESPONSE;
+            }
+        break;
+
+        default:
+            break;
     }
 }
 
@@ -137,7 +343,7 @@ static void unbind_phone_number(const char* phone_number) {
     }
 }
 
-static void config_save(char* ptrDeviceName, uint8_t notifyPermissions, float batteryLevel) {
+static void config_set(char* ptrDeviceName, uint8_t notifyPermissions, float batteryLevel) {
     size_t size = strlen(ptrDeviceName);
     if (size > MAX_DEVICE_NAME_LENGTH) {
         return;
@@ -153,21 +359,22 @@ static void config_save(char* ptrDeviceName, uint8_t notifyPermissions, float ba
 
 static void config_get(char* ptrPhoneNum) {
     if (strlen(ptrPhoneNum) == PHONE_LENGTH) {
-        strcpy(Device.requestedPhone.number, ptrPhoneNum);
-        Device.configGetRequest = true;
+        if (!Device.requestHandlers[DeviceRequest_Config].active) {
+            strcpy(Device.requestHandlers[DeviceRequest_Config].phone.number, ptrPhoneNum);
+            Device.requestHandlers[DeviceRequest_Config].active = true;
+        }
     }
 }
 
+static void event_append(DeviceEvent_t event) {
+    if (event < MAX_EVENTS_COUNT) {
+        Device.eventHandlers[(int)event].active = true;
+    }
+}
 
 void device_on_button_reset_pressed_long_callback(void) {
     if (Device.State != DEVICE_STATE_UNDEFINED) {
         Device.resetEvent = true;
-    }
-}
-
-void device_on_button_tamper_released_callback(void) {
-    if (Device.State != DEVICE_STATE_UNDEFINED) {
-        Device.tamperEvent = true;
     }
 }
 
@@ -177,8 +384,7 @@ void device_create(void) {
     Device.run = run;
     Device.bind = bind_phone_number;
     Device.unbind = unbind_phone_number;
-    Device.config_save = config_save;
+    Device.config_set = config_set;
     Device.config_get = config_get;
-    Device.smsMutex = false;
-    Device.State = DEVICE_STATE_IDLE;
+    Device.event_append = event_append;
 }

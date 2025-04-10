@@ -128,9 +128,13 @@ static bool cmd_r_parse(const char* ptrPhoneNum, char* ptrTxt) {
     }
     if (relay_1_state >= 0) {
         discrete_output_set(pRelay_1, (bool)relay_1_state);
+        DeviceEvent_t event = (bool)relay_1_state ? DeviceEvent_Relay1On: DeviceEvent_Relay1Off;
+        Device.event_append(event);
     }
     if (relay_2_state >= 0) {
         discrete_output_set(pRelay_2, (bool)relay_2_state);
+        DeviceEvent_t event = (bool)relay_2_state ? DeviceEvent_Relay2On: DeviceEvent_Relay2Off;
+        Device.event_append(event);
     }
     return result;
 }
@@ -208,7 +212,7 @@ static void cmd_c_parse(char* phone_number, char* text) {
     if (*endPtr != '\0') {
         return;
     }
-    Device.config_save(deviceName, permissions, batteryLevel);
+    Device.config_set(deviceName, permissions, batteryLevel);
 }
 
 void on_new_sms_callback(char* ptrPhoneNum, char* ptrTxt) {

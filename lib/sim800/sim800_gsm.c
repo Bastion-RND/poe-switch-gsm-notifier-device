@@ -96,7 +96,7 @@ static void switch_gsm_state(Sim800Handle_t *p, sim800GsmState_t NewGsmState) {
     debug_printf("[GSM] switch state to INITIALIZATION\n");
     // sim800_parser_add(p, "+CREG: ", creg_parser, NULL);
     // sim800_parser_add(p, "SMS Ready", sms_ready_parser, NULL);
-    switch_sms_state(p, SIM800_SMS_STATE_IDLE);
+    // switch_sms_state(p, SIM800_SMS_STATE_IDLE);
     // gsm_init_process(p, SIM800_EVENT_INITIALIZATION_BEGIN, NULL);
     break;
 
@@ -152,6 +152,9 @@ static void switch_sms_state(Sim800Handle_t *p, sim800SmsState_t NewSmsState) {
     switch_gsm_state(p, SIM800_GSM_STATE_READY);
     break;
   }
+  if (NewSmsState == SIM800_SMS_STATE_TRANSMIT_SUCCESS || NewSmsState == SIM800_SMS_STATE_TRANSMIT_ERROR) {
+    NewSmsState = SIM800_SMS_STATE_IDLE;
+  }
   p->Gsm.Sms.State = NewSmsState;
 }
 
@@ -169,12 +172,15 @@ void sim800_gsm_run(Sim800Handle_t *p) {
     break;
 
   case SIM800_GSM_STATE_INITIALIZATION:
-    if (!flag) {
-      if (!sim800_is_locked(p) && p->Gsm.Sms.State == SIM800_SMS_STATE_IDLE) {
-        sim800_cmd(p, "AT+CSMP=17,167,0,25\n", 1000, NULL, NULL, SIM800_FLOW_ASYNC);
-        flag = true;
+    // if (!flag) {
+    //   if (!sim800_is_locked(p) && p->Gsm.Sms.State == SIM800_SMS_STATE_IDLE) {
+    //     sim800_cmd(p, "AT+CSMP=17,167,0,25\n", 1000, NULL, NULL, SIM800_FLOW_ASYNC);
+    //     flag = true;
+    //   }
+    // }
+      if (p->Gsm.Sms.State == SIM800_SMS_STATE_IDLE) {
+        switch_gsm_state(p, SIM800_GSM_STATE_READY); // FIXME
       }
-    }
     break; /* event-driven waiting */
 
   case SIM800_GSM_STATE_NOT_REGISTERED:
@@ -190,8 +196,16 @@ void sim800_gsm_run(Sim800Handle_t *p) {
     }
     break;
 
+    case SIM800_STATE_READY:
+      if (!flag) {
+        if (!sim800_is_locked(p) && p->Gsm.Sms.State == SIM800_SMS_STATE_IDLE) {
+          sim800_cmd(p, "AT+CSMP=17,167,0,25\n", 1000, NULL, NULL, SIM800_FLOW_ASYNC);
+          flag = true;
+        }
+      }
+    break;
+
   case SIM800_GSM_STATE_SMS:
-  case SIM800_GSM_STATE_READY:
   default:
     break;
   }
@@ -204,10 +218,10 @@ bool sim800_sms_send(Sim800Handle_t* p, char* phone, char* message, sim800_sms_c
   if (strlen(message) > 256) {
     return false;
   }
-  if (p->Gsm.State == SIM800_GSM_STATE_READY) {
-    p->Gsm.Sms.State = SIM800_SMS_STATE_IDLE;
-  }
-  if (p->Gsm.Sms.State != SIM800_SMS_STATE_IDLE || sim800_is_locked(p)) {
+  // if (p->Gsm.State == SIM800_GSM_STATE_READY && p->Gsm.State == SIM800_GSM_STATE_UNDEFINED) {
+  //   p->Gsm.Sms.State = SIM800_SMS_STATE_IDLE;
+  // }
+  if (p->Gsm.Sms.State != SIM800_SMS_STATE_IDLE || sim800_is_locked(p) || !flag) {
     return false;
   }
   debug_printf("Sending SMS, len %d", strlen(message));

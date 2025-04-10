@@ -10,29 +10,79 @@
 #define MAX_DEVICE_NAME_LENGTH    64
 #define NOTIFY_PERMISSION_LENGTH  4
 
+#define NO_220_EVENT_PERMISSION_POS       0
+#define RELAY_EVENT_PERMISSION_POS        1
+#define LOW_BATTERY_EVENT_PERMISSION_POS  2
+#define TAMPER_EVENT_PERMISSION_POS       3
+
+#define SINGLE_SMS_LENGTH_MAX     (256 * 2 - 1)
+
 typedef enum DeviceState_ {
   DEVICE_STATE_UNDEFINED = 0,
   DEVICE_STATE_IDLE,
+  DEVICE_STATE_SENDING_SINGLE_SMS,
+  DEVICE_STATE_SENDING_MULTIPLY_SMS,
+  DEVICE_STATE_AWAIT_RESPONSE,
 } DeviceState_t;
+
+typedef enum DeviceEvent_ {
+  DeviceEvent_Tamper = 0,
+  DeviceEvent_NoPower220,
+  DeviceEvent_LowBatt,
+  DeviceEvent_Relay1On,
+  DeviceEvent_Relay1Off,
+  DeviceEvent_Relay2On,
+  DeviceEvent_Relay2Off,
+} DeviceEvent_t;
+
+typedef enum DeviceRequest_ {
+  DeviceRequest_Config = 0,
+  DeviceRequest_List,
+} DeviceRequest_t;
+
+#define MAX_EVENTS_COUNT  7
+#define MAX_REQUEST_COUNT 2
 
 typedef struct Phone_ {
   char number[PHONE_LENGTH + 1];
 } Phone_t;
+
+typedef struct DeviceEventHandler_ {
+  bool active;
+  const char* txt;
+  uint32_t timestampMs;
+  uint32_t minTimeRepeatMs;
+} DeviceEventHandler_t;
+
+typedef struct DeviceRequestHandler_ {
+  bool active;
+  Phone_t phone;
+  uint32_t timestampMs;
+  uint32_t minTimeRepeatMs;
+} DeviceRequestHandler_t;
+
+typedef struct SmsSender_ {
+  char* ptrPhoneNumber;
+  char txt[SINGLE_SMS_LENGTH_MAX];
+  int handlerIdx;
+  int phoneCount;
+  int phoneIdx;
+} SmsSender_t;
 
 typedef struct Device_ {
   void 	(*init)(void);
   void 	(*run)(void);
   void 	(*bind)(const char*);
   void 	(*unbind)(const char*);
-  void  (*config_save)(char*, uint8_t, float);
+  void  (*config_set)(char*, uint8_t, float);
   void  (*config_get)(char*);
+  void  (*event_append)(DeviceEvent_t);
   uint8_t phoneCount;
   Phone_t phoneBook[MAX_PHONE_COUNT];
+  DeviceEventHandler_t eventHandlers[MAX_EVENTS_COUNT];
+  DeviceRequestHandler_t requestHandlers[MAX_REQUEST_COUNT];
+  SmsSender_t smsSender;
   bool resetEvent;
-  bool tamperEvent;
-  bool configGetRequest;
-  Phone_t requestedPhone;
-  bool smsMutex;
   DeviceState_t State;
 } Device_t;
 

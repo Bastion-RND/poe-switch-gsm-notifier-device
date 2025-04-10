@@ -62,8 +62,7 @@ void
 discrete_input_opened_callback(DiscreteInput_t *p) {
     switch (p->id) {
         case BUTTON_TAMPER_ID:
-            debug_printf("TAMPER released callback\n");
-            device_on_button_tamper_released_callback();
+            Device.event_append(DeviceEvent_Tamper);
             break;
 
         default:
