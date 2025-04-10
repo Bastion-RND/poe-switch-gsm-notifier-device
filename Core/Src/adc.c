@@ -52,6 +52,22 @@ static void run() {
                     Adc.timestampMs = HAL_GetTick();
                     Adc.State = MyAdcState_WaitingDma;
                 }
+            } else if ((HAL_GetTick() - Adc.noPowerTimestampMs >= ADC_NO_POWER_220_CHECK_PERIOD_MS)) {
+                Adc.noPowerTimestampMs = HAL_GetTick();
+                if ((!Adc.noPower220Flag) && Adc.MovingAverage220.value > 2.0f) { //TODO magic number
+                    Adc.noPower220Counter++;
+                    if (Adc.noPower220Counter >= ADC_NO_POWER_220_MAX_COUNT) {
+                        Adc.noPower220Flag = true;
+                        debug_printf("[ADC] The 220V supply voltage has been turned off\n");
+                        Device.event_append(DeviceEvent_NoPower220);
+                    }
+                } else if (Adc.noPower220Flag && Adc.MovingAverage220.value < (2.0f - 0.5f)) { //TODO magic number
+                    Adc.noPower220Counter = (Adc.noPower220Counter > 0) ? Adc.noPower220Counter - 1 : 0;
+                    if (Adc.noPower220Counter == 0) {
+                        Adc.noPower220Flag = false;
+                        debug_printf("[ADC] The 220V supply voltage has been restored\n");
+                    }
+                }
             }
         break;
 

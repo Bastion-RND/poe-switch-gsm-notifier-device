@@ -4,9 +4,11 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#define ADC_SAMPLE_COUNT    32
-#define ADC_SMOOTH_WINDOW   16
-#define ADC_POLL_PERIOD_MS  100
+#define ADC_SAMPLE_COUNT                    32
+#define ADC_SMOOTH_WINDOW                   16
+#define ADC_POLL_PERIOD_MS                  100
+#define ADC_NO_POWER_220_CHECK_PERIOD_MS    100
+#define ADC_NO_POWER_220_MAX_COUNT          50
 
 typedef enum MyAdcState_ {
     MyAdcState_Undefined = 0,
@@ -33,6 +35,9 @@ typedef struct MyAdc_ {
     MyAdcState_t    State;
     MovingAverage_t MovingAverageBattery;
     MovingAverage_t MovingAverage220;
+    uint32_t        noPowerTimestampMs;
+    uint32_t        noPower220Counter;
+    bool            noPower220Flag;
 } MyAdc_t;
 #pragma pack(pop)
 
