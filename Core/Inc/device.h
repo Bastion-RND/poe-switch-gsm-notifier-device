@@ -22,6 +22,7 @@ typedef enum DeviceState_ {
   DEVICE_STATE_SENDING_SINGLE_SMS,
   DEVICE_STATE_SENDING_MULTIPLY_SMS,
   DEVICE_STATE_AWAIT_RESPONSE,
+  DEVICE_STATE_RESET,
 } DeviceState_t;
 
 typedef enum DeviceEvent_ {

@@ -23,7 +23,7 @@ static void init() {
     EepromInFlash.read(EEPROM_ADDR_INIT_TAG, (uint8_t*) &tag, sizeof(tag));
     if (tag != INIT_TAG) {
         debug_printf("[Device] default initialization...\n");
-        strcpy(Config.name, "Unknown");
+        strcpy(Config.name, "");
         Config.permissions = 0b1111; //TODO magic number
         Config.batteryLowThreshold = 24.0f;  //TODO magic number
         tag = INIT_TAG;
@@ -301,6 +301,30 @@ static void run() {
             }
         break;
 
+        case DEVICE_STATE_RESET:
+            for (int i = 0; i < MAX_EVENTS_COUNT; i++) {
+                Device.eventHandlers[i].active = false;
+            }
+            for (int i = 0; i < MAX_REQUEST_COUNT; i++) {
+                Device.requestHandlers[i].active = false;
+            }
+            for (int i = 0; i < MAX_PHONE_COUNT; i++) {
+                memset(Device.phoneBook[i].number, 0x00, sizeof(Phone_t));
+            }
+            Device.phoneCount = 0;
+            memset(&Config, 0x00, sizeof(Config_t));
+            Config.permissions = 0b1111; //TODO magic number
+            Config.batteryLowThreshold = 24.0f;  //TODO magic number
+            EepromInFlash.write(EEPROM_ADDR_CONFIG, (uint8_t*)&Config, sizeof(Config_t));
+            for (int i = 0; i < MAX_PHONE_COUNT; i++) {
+                uint16_t eepromAddr = EEPROM_ADDR_PHONE_BOOK + i * sizeof(Phone_t);
+                EepromInFlash.write(eepromAddr, (uint8_t*) &Device.phoneBook[i], sizeof(Phone_t));
+            }
+            discrete_output_reset(pUserLed);
+            discrete_output_meander_start(pUserLed, 100, 100, 10);
+            Device.userLed.State = UserLedState_ResetDevice;
+            Device.State = DEVICE_STATE_IDLE;
+
         default:
             break;
     }
@@ -334,6 +358,7 @@ static void run() {
 
         case UserLedState_ResetDevice:
             if (!discrete_output_is_in_sequence(pUserLed)) {
+                HAL_NVIC_SystemReset();
                 Device.userLed.State = UserLedState_Undefined;
             }
         break;
@@ -436,7 +461,7 @@ static void event_append(DeviceEvent_t event) {
 
 void device_on_button_reset_pressed_long_callback(void) {
     if (Device.State != DEVICE_STATE_UNDEFINED) {
-        Device.resetEvent = true;
+        Device.State = DEVICE_STATE_RESET;
     }
 }
 
