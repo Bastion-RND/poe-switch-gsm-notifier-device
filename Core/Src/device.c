@@ -195,6 +195,24 @@ static bool prepare_event_message(int i) {
     return result;
 }
 
+bool join_numbers() {
+    bool result = false;
+    Device.smsSender.txt[0] = '\0';
+    for (int i = 0; i < Device.phoneCount; i++) {
+        char* ptrPhone = get_phone_num_by_idx(i);
+        if (ptrPhone == NULL) {
+            break;
+        }
+        size_t remainingLen = SINGLE_SMS_LENGTH_MAX - strlen(Device.smsSender.txt) - 1;
+        if (i > 0) {
+            strncat(Device.smsSender.txt, " ", remainingLen);
+        }
+        strncat(Device.smsSender.txt, ptrPhone, remainingLen);
+    }
+    if (strlen(Device.smsSender.txt) > 0) result = true;
+    return result;
+}
+
 static bool prepare_response_message(int request) {
     bool result = false;
     int idx = 0;
@@ -216,6 +234,7 @@ static bool prepare_response_message(int request) {
             result = true;
             break;
         case DeviceRequest_List:
+            result = join_numbers();
         default:
             break;
     }
@@ -258,7 +277,7 @@ static void run() {
                     Device.smsSender.handlerIdx = i;
                     Device.smsSender.ptrPhoneNumber = Device.requestHandlers[i].phone.number;
                     Device.State = DEVICE_STATE_SENDING_SINGLE_SMS;
-                    return;;
+                    return;
                 }
             }
         break;
@@ -366,6 +385,15 @@ static void config_get(char* ptrPhoneNum) {
     }
 }
 
+static void phones_list_get(char* ptrPhoneNum) {
+    if (strlen(ptrPhoneNum) == PHONE_LENGTH) {
+        if (!Device.requestHandlers[DeviceRequest_List].active) {
+            strcpy(Device.requestHandlers[DeviceRequest_List].phone.number, ptrPhoneNum);
+            Device.requestHandlers[DeviceRequest_List].active = true;
+        }
+    }
+}
+
 static void event_append(DeviceEvent_t event) {
     if (event < MAX_EVENTS_COUNT) {
         Device.eventHandlers[(int)event].active = true;
@@ -386,5 +414,6 @@ void device_create(void) {
     Device.unbind = unbind_phone_number;
     Device.config_set = config_set;
     Device.config_get = config_get;
+    Device.phones_list_get = phones_list_get;
     Device.event_append = event_append;
 }
