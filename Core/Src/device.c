@@ -8,7 +8,7 @@
 #include "exported.h"
 #include "eeprom_in_flash.h"
 
-static Config_t Config;
+Config_t Config;
 Device_t Device;
 
 const char* tamperTxt = "[%s]Дверца шкафа открыта\n%s";

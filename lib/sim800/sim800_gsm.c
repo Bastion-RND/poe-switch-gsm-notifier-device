@@ -221,7 +221,7 @@ bool sim800_sms_send(Sim800Handle_t* p, char* phone, char* message, sim800_sms_c
   // if (p->Gsm.State == SIM800_GSM_STATE_READY && p->Gsm.State == SIM800_GSM_STATE_UNDEFINED) {
   //   p->Gsm.Sms.State = SIM800_SMS_STATE_IDLE;
   // }
-  if (p->Gsm.Sms.State != SIM800_SMS_STATE_IDLE || sim800_is_locked(p)) {
+  if (p->Gsm.Sms.State != SIM800_SMS_STATE_IDLE || sim800_is_locked(p) || !flag) {
     return false;
   }
   debug_printf("Sending SMS, len %d", strlen(message));

@@ -9,6 +9,7 @@
 extern MyAdc_t Adc;
 
 extern Device_t Device;
+extern Config_t Config;
 
 extern Sim800Handle_t* Sim800Handle;
 
