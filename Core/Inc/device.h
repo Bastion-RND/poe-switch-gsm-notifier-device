@@ -10,6 +10,11 @@
 #define MAX_DEVICE_NAME_LENGTH    64
 #define NOTIFY_PERMISSION_LENGTH  4
 
+#define NO_220_EVENT_PERMISSION_POS       0
+#define RELAY_EVENT_PERMISSION_POS        1
+#define LOW_BATTERY_EVENT_PERMISSION_POS  2
+#define TAMPER_EVENT_PERMISSION_POS       3
+
 #define SINGLE_SMS_LENGTH_MAX     (256 * 2 - 1)
 
 typedef enum DeviceState_ {

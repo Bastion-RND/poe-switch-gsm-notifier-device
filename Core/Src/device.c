@@ -119,6 +119,34 @@ static char* get_phone_num_by_idx(int idx) {
     return NULL;
 }
 
+static bool check_permissions(int i) {
+    bool result = false;
+    switch ((DeviceEvent_t)i) {
+        case DeviceEvent_LowBatt:
+            if (Config.permissions & (1 << LOW_BATTERY_EVENT_PERMISSION_POS)) result = true;
+        break;
+
+        case DeviceEvent_Relay1On:
+        case DeviceEvent_Relay1Off:
+        case DeviceEvent_Relay2On:
+        case DeviceEvent_Relay2Off:
+            if (Config.permissions & (1 << RELAY_EVENT_PERMISSION_POS)) result = true;
+        break;
+
+        case DeviceEvent_Tamper:
+            if (Config.permissions & (1 << TAMPER_EVENT_PERMISSION_POS)) result = true;
+        break;
+
+        case DeviceEvent_NoPower220:
+            if (Config.permissions & (1 << NO_220_EVENT_PERMISSION_POS)) result = true;
+        break;
+
+        default:
+            break;
+    }
+    return result;
+}
+
 static bool prepare_event_message(int i) {
     bool result = false;
     switch ((DeviceEvent_t)i) {
@@ -202,6 +230,10 @@ static void run() {
                     uint32_t elapsed_time_ms = HAL_GetTick() - Device.eventHandlers[i].timestampMs;
                     bool ena_by_time = elapsed_time_ms >= Device.eventHandlers[i].minTimeRepeatMs;
                     if (!ena_by_time) {continue;}
+                    if (!check_permissions(i)) {
+                        Device.eventHandlers[i].active = false;
+                        continue;
+                    }
                     prepare_event_message(i);
                     if (!prepare_event_message(i)) {
                         Device.eventHandlers[i].active = false;
