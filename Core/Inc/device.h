@@ -8,7 +8,7 @@
 
 #define MAX_PHONE_COUNT           15
 #define PHONE_LENGTH              12
-#define MAX_DEVICE_NAME_LENGTH    64
+#define MAX_DEVICE_NAME_LENGTH    (size_t)(64 * 2)
 #define NOTIFY_PERMISSION_LENGTH  4
 
 #define NO_220_EVENT_PERMISSION_POS       0

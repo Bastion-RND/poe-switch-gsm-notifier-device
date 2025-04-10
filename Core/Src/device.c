@@ -433,6 +433,9 @@ static void config_set(char* ptrDeviceName, uint8_t notifyPermissions, float bat
     Config.permissions = notifyPermissions;
     Config.batteryLowThreshold = batteryLevel;
     EepromInFlash.write(EEPROM_ADDR_CONFIG, (uint8_t*)&Config, sizeof(Config_t));
+    debug_printf("[Device] New config are saved, name <%s>, ", ptrDeviceName);
+    debug_printf("permissions <0x%X>, ", Config.permissions);
+    debug_printf("battery low level <%d> mV\n", (int)(Config.batteryLowThreshold * 1000));
 }
 
 static void config_get(char* ptrPhoneNum) {
