@@ -237,7 +237,7 @@ void on_new_sms_callback(char* ptrPhoneNum, char* ptrTxt) {
             break;
             case 'l':
                 if (strlen(ptrTxt) == 1) {
-                    debug_printf("[Device] Get numbers list for %s\n", ptrPhoneNum);
+                    Device.phones_list_get(ptrPhoneNum);
                     result = true;
                 }
             break;

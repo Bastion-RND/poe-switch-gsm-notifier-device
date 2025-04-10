@@ -215,7 +215,7 @@ bool sim800_sms_send(Sim800Handle_t* p, char* phone, char* message, sim800_sms_c
   if (p == NULL || phone == NULL || message == NULL) {
     return false;
   }
-  if (strlen(message) > 256) {
+  if (strlen(message) > SINGLE_SMS_LENGTH_MAX) {
     return false;
   }
   // if (p->Gsm.State == SIM800_GSM_STATE_READY && p->Gsm.State == SIM800_GSM_STATE_UNDEFINED) {

@@ -4,6 +4,7 @@
 #include <stdbool.h>
 
 #include "main.h"
+#include "sim800_gsm.h"
 
 #define MAX_PHONE_COUNT           15
 #define PHONE_LENGTH              12
@@ -14,8 +15,6 @@
 #define RELAY_EVENT_PERMISSION_POS        1
 #define LOW_BATTERY_EVENT_PERMISSION_POS  2
 #define TAMPER_EVENT_PERMISSION_POS       3
-
-#define SINGLE_SMS_LENGTH_MAX     (256 * 2 - 1)
 
 typedef enum DeviceState_ {
   DEVICE_STATE_UNDEFINED = 0,
@@ -63,7 +62,7 @@ typedef struct DeviceRequestHandler_ {
 
 typedef struct SmsSender_ {
   char* ptrPhoneNumber;
-  char txt[SINGLE_SMS_LENGTH_MAX];
+  char txt[SINGLE_SMS_LENGTH_MAX + 1];
   int handlerIdx;
   int phoneCount;
   int phoneIdx;
@@ -76,6 +75,7 @@ typedef struct Device_ {
   void 	(*unbind)(const char*);
   void  (*config_set)(char*, uint8_t, float);
   void  (*config_get)(char*);
+  void  (*phones_list_get)(char*);
   void  (*event_append)(DeviceEvent_t);
   uint8_t phoneCount;
   Phone_t phoneBook[MAX_PHONE_COUNT];
