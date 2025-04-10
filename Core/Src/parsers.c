@@ -139,86 +139,51 @@ static bool cmd_r_parse(const char* ptrPhoneNum, char* ptrTxt) {
     return result;
 }
 
-static void cmd_c_parse(char* phone_number, char* text) {
-    int stage    = 0;
-    size_t idx   = 0;
-    char* txtPtr = text;
-    char deviceName[64 + 1];
-    size_t deviceNameLen = sizeof(deviceName) / sizeof(deviceName[0]) - 1;
-    char notifyPermissions[4 + 1];
-    size_t notifyPermissionsLen = sizeof(notifyPermissions) / sizeof(notifyPermissions[0]) - 1;
-    char batteryLevelStr[4 + 1];
-    size_t batteryLevelStrLen = sizeof(batteryLevelStr) / sizeof(batteryLevelStr[0]) - 1;
-    float batteryLevel        = 0.0f;
-    if (!check_phone_number(phone_number))
-        return;
-    while (stage < 3) {
-        if (*txtPtr == ',') {
-            txtPtr++;
-            continue;
-        }
-        if (*txtPtr == '\0') {
-            break;
-        }
-        switch (stage) {
 
-            case 0:
-                for (idx = 0; idx < deviceNameLen; idx++) {
-                    if (!check_comma(txtPtr) && *txtPtr != '\0') {
-                        deviceName[idx] = *txtPtr;
-                        txtPtr++;
-                    } else {
-                        break;
-                    }
-                }
-                deviceName[idx] = '\0';
-                break;
+static bool extract_field(char** pptrStart, char* dest, size_t destLen) {
+    if (*pptrStart == NULL) return false;
+    char* ptrEnd = strchr(*pptrStart, ',');
+    size_t len = ptrEnd ? (size_t)(ptrEnd - *pptrStart) : strlen(*pptrStart);
+    if (len > destLen) return false;
+    strncpy(dest, *pptrStart, len);
+    dest[len] = '\0';
+    *pptrStart = ptrEnd ? ptrEnd + 1 : NULL;
+    return true;
+}
 
-            case 1:
-                for (idx = 0; idx < notifyPermissionsLen; idx++) {
-                    if (!check_comma(txtPtr) && *txtPtr != '\0') {
-                        notifyPermissions[idx] = *txtPtr;
-                        txtPtr++;
-                    } else {
-                        return;
-                    }
-                }
-                notifyPermissions[idx] = '\0';
-                break;
+static bool cmd_c_parse(const char* text) {
+    char deviceName[MAX_DEVICE_NAME_LENGTH + 1];
+    deviceName[0] = '\0';
+    char notifyPermissionsStr[NOTIFY_PERMISSION_LENGTH + 1];
+    notifyPermissionsStr[0] = '\0';
+    char batteryLevelStr[10 + 1];
+    batteryLevelStr[0] = '\0';
 
-            case 2:
-                for (idx = 0; idx < batteryLevelStrLen; idx++) {
-                    if (!check_comma(txtPtr) && *txtPtr != '\0') {
-                        batteryLevelStr[idx] = *txtPtr;
-                        txtPtr++;
-                    } else {
-                        return;
-                    }
-                }
-                batteryLevelStr[idx] = '\0';
-                batteryLevel         = strtof(batteryLevelStr, NULL);
-                if (batteryLevel == 0.0 && batteryLevelStr[0] != '0') {
-                    return;
-                }
-                break;
+    char* pStart = strchr(text, ',');
+    if (pStart == NULL) return false;
+    pStart += 1;
+    if (!extract_field(&pStart, deviceName, MAX_DEVICE_NAME_LENGTH)) return false;
+    if (!extract_field(&pStart, notifyPermissionsStr, NOTIFY_PERMISSION_LENGTH)) return false;
+    if (!extract_field(&pStart, batteryLevelStr, 10)) return false;
 
-            default:
-                return;
-        }
-        stage++;
-    }
+    if (strlen(notifyPermissionsStr) != NOTIFY_PERMISSION_LENGTH) return false;
+
     char *endPtr;
-    uint8_t permissions = (uint8_t)strtol(&notifyPermissions[0], &endPtr, 2);
+    float batteryLevel = strtof(batteryLevelStr, &endPtr);
+    if (*endPtr != '\0') return false;
+
+    uint8_t permissions = (uint8_t)strtol(&notifyPermissionsStr[0], &endPtr, 2);
     if (*endPtr != '\0') {
-        return;
+        return false;
     }
     Device.config_set(deviceName, permissions, batteryLevel);
+    return true;
 }
 
 void on_new_sms_callback(char* ptrPhoneNum, char* ptrTxt) {
     debug_printf("[Parsers] Start, phone: <%s>, text: <%s>\n", ptrPhoneNum, ptrTxt);
     bool result = false;
-    if (*ptrTxt == '$') {
+    if (check_phone_number(ptrPhoneNum) && *ptrTxt == '$') {
         ptrTxt++;
         if (strlen(ptrTxt) >= 1) {
             switch (*ptrTxt) {
@@ -229,8 +194,7 @@ void on_new_sms_callback(char* ptrPhoneNum, char* ptrTxt) {
                 result = cmd_b_parse(++ptrTxt);
             break;
             case 'c':
-                cmd_c_parse(ptrPhoneNum, ++ptrTxt);
-                result = true;
+                result = cmd_c_parse(ptrTxt);
             break;
             case 'r':
                 result = cmd_r_parse(ptrPhoneNum, ++ptrTxt);
