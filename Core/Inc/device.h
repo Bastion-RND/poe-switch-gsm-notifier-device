@@ -39,6 +39,13 @@ typedef enum DeviceRequest_ {
   DeviceRequest_List,
 } DeviceRequest_t;
 
+typedef enum UserLedState_ {
+  UserLedState_Undefined = 0,
+  UserLedState_GsmNotReady,
+  UserLedState_GsmReady,
+  UserLedState_ResetDevice,
+} UserLedState_t;
+
 #define MAX_EVENTS_COUNT  7
 #define MAX_REQUEST_COUNT 2
 
@@ -68,6 +75,10 @@ typedef struct SmsSender_ {
   int phoneIdx;
 } SmsSender_t;
 
+typedef struct UserLed_ {
+  UserLedState_t State;
+} UserLed_t;
+
 typedef struct Device_ {
   void 	(*init)(void);
   void 	(*run)(void);
@@ -84,6 +95,7 @@ typedef struct Device_ {
   SmsSender_t smsSender;
   bool resetEvent;
   DeviceState_t State;
+  UserLed_t userLed;
 } Device_t;
 
 #pragma pack(push, 1)
