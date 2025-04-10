@@ -304,6 +304,40 @@ static void run() {
         default:
             break;
     }
+
+    switch (Device.userLed.State) {
+        case UserLedState_Undefined:
+            if (Sim800Handle->Gsm.State == SIM800_GSM_STATE_READY) {
+                discrete_output_set(pUserLed,true);
+                Device.userLed.State = UserLedState_GsmReady;
+            } else {
+                discrete_output_reset(pUserLed);
+                discrete_output_meander_start(pUserLed, 1000, 1000, DISCRETE_OUTPUT_COUNT_INFINITE);
+                Device.userLed.State = UserLedState_GsmNotReady;
+            }
+        break;
+
+        case UserLedState_GsmNotReady:
+            if (Sim800Handle->Gsm.State == SIM800_GSM_STATE_READY) {
+                discrete_output_set(pUserLed,true);
+                Device.userLed.State = UserLedState_GsmReady;
+            }
+        break;
+
+        case UserLedState_GsmReady:
+            if (Sim800Handle->Gsm.State != SIM800_GSM_STATE_READY) {
+                discrete_output_reset(pUserLed);
+                discrete_output_meander_start(pUserLed, 1000, 1000, DISCRETE_OUTPUT_COUNT_INFINITE);
+                Device.userLed.State = UserLedState_GsmNotReady;
+            }
+        break;
+
+        case UserLedState_ResetDevice:
+            if (!discrete_output_is_in_sequence(pUserLed)) {
+                Device.userLed.State = UserLedState_Undefined;
+            }
+        break;
+    }
 }
 
 static void bind_phone_number(const char* ptrPhoneNum) {
