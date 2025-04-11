@@ -101,46 +101,8 @@ static bool parse_relay_state(const char* text, int* state) {
     return result;
 }
 
-static bool cmd_r_parse(const char* ptrPhoneNum, char* ptrTxt) {
-    (void)ptrPhoneNum;
-    int relay_1_state = -1;
-    int relay_2_state = -1;
-    bool result = false;
-    int stage         = 0;
-
-    if (strlen(ptrTxt) == 4) {
-        while (*ptrTxt != '\0') {
-            if (*ptrTxt != ',') {
-                if (stage == 0) {
-                    if (!parse_relay_state(ptrTxt, &relay_1_state)) {
-                        break;
-                    }
-                    stage = 1;
-                } else {
-                    if (!parse_relay_state(ptrTxt, &relay_2_state)) {
-                        break;
-                    }
-                    result = true;
-                }
-            }
-            ptrTxt++;
-        }
-    }
-    if (relay_1_state >= 0) {
-        discrete_output_set(pRelay_1, (bool)relay_1_state);
-        DeviceEvent_t event = (bool)relay_1_state ? DeviceEvent_Relay1On: DeviceEvent_Relay1Off;
-        Device.event_append(event);
-    }
-    if (relay_2_state >= 0) {
-        discrete_output_set(pRelay_2, (bool)relay_2_state);
-        DeviceEvent_t event = (bool)relay_2_state ? DeviceEvent_Relay2On: DeviceEvent_Relay2Off;
-        Device.event_append(event);
-    }
-    return result;
-}
-
-
 static bool extract_field(char** pptrStart, char* dest, size_t destLen) {
+    dest[0] = '\0';
     if (*pptrStart == NULL) return false;
     char* ptrEnd = strchr(*pptrStart, ',');
     size_t len = ptrEnd ? (size_t)(ptrEnd - *pptrStart) : strlen(*pptrStart);
@@ -151,13 +113,37 @@ static bool extract_field(char** pptrStart, char* dest, size_t destLen) {
     return true;
 }
 
+static bool cmd_r_parse(char* ptrTxt) {
+    char strBuf[1 + 1];
+    int relay1State = -1;
+    int relay2State = -1;
+    char* pStart = strchr(ptrTxt, ',');
+    if (pStart == NULL) return false;
+    pStart += 1;
+    if (!extract_field(&pStart, strBuf, 1)) return false;
+    if (!parse_relay_state(strBuf, &relay1State)) return false;
+    if (!extract_field(&pStart, strBuf, 1)) return false;
+    if (!parse_relay_state(strBuf, &relay2State)) return false;
+    if (relay1State >= 0) {
+        discrete_output_set(pRelay_1, (bool)relay1State);
+        // DeviceEvent_t event = (bool)relay1State ? DeviceEvent_Relay1On: DeviceEvent_Relay1Off;
+        // Device.event_append(event); //FIXME uncomment it
+    }
+    if (relay2State >= 0) {
+        discrete_output_set(pRelay_2, (bool)relay2State);
+        // DeviceEvent_t event = (bool)relay2State ? DeviceEvent_Relay2On: DeviceEvent_Relay2Off;
+        // Device.event_append(event);  //FIXME uncomment it
+    }
+    debug_printf("[Parsers] Relay set state:\n");
+    debug_printf("\tRelay 1 - \"%d\"\n", relay1State);
+    debug_printf("\tRelay 2 - \"%d\"\n", relay2State);
+    return true;
+}
+
 static bool cmd_c_parse(const char* ptrPhoneNum, const char* text) {
     char deviceName[MAX_DEVICE_NAME_LENGTH + 1];
-    deviceName[0] = '\0';
     char notifyPermissionsStr[NOTIFY_PERMISSION_LENGTH + 1];
-    notifyPermissionsStr[0] = '\0';
     char batteryLevelStr[10 + 1];
-    batteryLevelStr[0] = '\0';
 
     char* pStart = strchr(text, ',');
     if (pStart == NULL) return false;
@@ -181,7 +167,7 @@ static bool cmd_c_parse(const char* ptrPhoneNum, const char* text) {
 }
 
 void on_new_sms_callback(char* ptrPhoneNum, char* ptrTxt) {
-    debug_printf("[Parsers] Start, phone: <%s>, text: <%s>\n", ptrPhoneNum, ptrTxt);
+    debug_printf("\n[Parsers] Start, phone: <%s>, text: <%s>\n", ptrPhoneNum, ptrTxt);
     bool result = false;
     if (check_phone_number(ptrPhoneNum) && *ptrTxt == '$') {
         ptrTxt++;
@@ -197,7 +183,7 @@ void on_new_sms_callback(char* ptrPhoneNum, char* ptrTxt) {
                 result = cmd_c_parse(ptrPhoneNum, ptrTxt);
             break;
             case 'r':
-                result = cmd_r_parse(ptrPhoneNum, ++ptrTxt);
+                result = cmd_r_parse(ptrTxt);
             break;
             case 'l':
                 if (strlen(ptrTxt) == 1) {
@@ -217,6 +203,6 @@ void on_new_sms_callback(char* ptrPhoneNum, char* ptrTxt) {
         }
     }
     if (!result) {
-        debug_printf("[Parsers] Error while parsing\n");
+        debug_printf("[Parsers] ERROR in \"%s\"\n", __func__);
     }
 }
