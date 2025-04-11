@@ -85,7 +85,7 @@ typedef struct Device_ {
   void 	(*run)(void);
   void 	(*bind)(const char*);
   void 	(*unbind)(const char*);
-  void  (*config_set)(char*, uint8_t, float);
+  void  (*config_set)(const char*, char*, uint8_t, float);
   void  (*config_get)(char*);
   void  (*phones_list_get)(char*);
   void  (*event_append)(DeviceEvent_t);

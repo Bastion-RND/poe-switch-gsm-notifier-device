@@ -151,7 +151,7 @@ static bool extract_field(char** pptrStart, char* dest, size_t destLen) {
     return true;
 }
 
-static bool cmd_c_parse(const char* text) {
+static bool cmd_c_parse(const char* ptrPhoneNum, const char* text) {
     char deviceName[MAX_DEVICE_NAME_LENGTH + 1];
     deviceName[0] = '\0';
     char notifyPermissionsStr[NOTIFY_PERMISSION_LENGTH + 1];
@@ -176,7 +176,7 @@ static bool cmd_c_parse(const char* text) {
     if (*endPtr != '\0') {
         return false;
     }
-    Device.config_set(deviceName, permissions, batteryLevel);
+    Device.config_set(ptrPhoneNum, deviceName, permissions, batteryLevel);
     return true;
 }
 
@@ -194,7 +194,7 @@ void on_new_sms_callback(char* ptrPhoneNum, char* ptrTxt) {
                 result = cmd_b_parse(++ptrTxt);
             break;
             case 'c':
-                result = cmd_c_parse(ptrTxt);
+                result = cmd_c_parse(ptrPhoneNum, ptrTxt);
             break;
             case 'r':
                 result = cmd_r_parse(ptrPhoneNum, ++ptrTxt);
