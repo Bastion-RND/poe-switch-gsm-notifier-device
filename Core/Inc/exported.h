@@ -12,7 +12,8 @@ extern MyAdc_t Adc;
 extern Device_t Device;
 extern Config_t Config;
 
-extern Sim800Handle_t* Sim800Handle;
+extern Sim800Handle_t Sim800;
+extern Sim800Hardware_t Sim800Hardware;
 
 extern DiscreteOutput_t* pUserLed;
 

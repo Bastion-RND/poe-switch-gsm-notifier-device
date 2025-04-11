@@ -5,7 +5,7 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-#include "circular_buffer.h"
+#include "../circular_buffer/circular_buffer.h"
 
 #include "sim800_gsm_types.h"
 
@@ -29,14 +29,14 @@ typedef enum Sim800ModuleState_ {
     SIM800_MODULE_STATE_ERROR,
 } Sim800ModuleState_t;
 
-typedef enum Sim800State_ {
-    SIM800_STATE_UNDEFINED = 0,
-    SIM800_STATE_INIT_MODULE,
-    SIM800_INIT_GSM_NETWORK,
-    SIM800_INIT_SMS_LAYER,
-    SIM800_STATE_READY,
-    SIM800_STATE_ERROR,
-} Sim800State_t;
+// typedef enum Sim800State_ {
+//     SIM800_STATE_UNDEFINED = 0,
+//     SIM800_STATE_INIT_MODULE,
+//     SIM800_INIT_GSM_NETWORK,
+//     SIM800_INIT_SMS_LAYER,
+//     SIM800_STATE_READY,
+//     SIM800_STATE_ERROR,
+// } Sim800State_t;
 
 typedef enum Sim800Event_ {
     SIM800_EVENT_CMD_RESULT_OK = 0,
@@ -94,22 +94,22 @@ typedef struct Sim800Module_ {
     Sim800Timer_t Timer;
 } Sim800Module_t;
 
-typedef struct Sim800Handle_ {
-    struct {
-        bool _mutex;
-        uint32_t ts;
-        char str[128];
-        uint32_t timeout;
-        uint32_t attemptCounter;
-        sim800_callback_t callback;
-        void *callback_param;
-    } Command;
-
-    cbuf_handle_t TxCbufHandle;
-    cbuf_handle_t RxCbufHandle;
-    Sim800Module_t Module;
-    Sim800Gsm_t Gsm;
-    Sim800Parser_t* ParsersList;
-} Sim800Handle_t;
+// typedef struct Sim800Handle_ {
+//     struct {
+//         bool _mutex;
+//         uint32_t ts;
+//         char str[128];
+//         uint32_t timeout;
+//         uint32_t attemptCounter;
+//         sim800_callback_t callback;
+//         void *callback_param;
+//     } Command;
+//
+//     cbuf_handle_t TxCbufHandle;
+//     cbuf_handle_t RxCbufHandle;
+//     Sim800Module_t Module;
+//     Sim800Gsm_t Gsm;
+//     Sim800Parser_t* ParsersList;
+// } Sim800Handle_t;
 
 #endif /* SIM800_TYPES_H_ */

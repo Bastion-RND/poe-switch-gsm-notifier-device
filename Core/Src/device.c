@@ -289,16 +289,16 @@ static void run() {
                 Device.eventHandlers[Device.smsSender.handlerIdx].timestampMs = HAL_GetTick();
                 Device.State = DEVICE_STATE_IDLE; /* all subscribers have been served */
             }
-            else if (sim800_sms_send(Sim800Handle, Device.smsSender.ptrPhoneNumber, Device.smsSender.txt, wait_for_multiply_sms_response)) {
-                Device.smsSender.phoneIdx++;
-                Device.State = DEVICE_STATE_AWAIT_RESPONSE;
-            }
+            // else if (sim800_sms_send(Sim800Handle, Device.smsSender.ptrPhoneNumber, Device.smsSender.txt, wait_for_multiply_sms_response)) {
+            //     Device.smsSender.phoneIdx++;
+            //     Device.State = DEVICE_STATE_AWAIT_RESPONSE;
+            // }
         break;
 
         case DEVICE_STATE_SENDING_SINGLE_SMS:
-            if (sim800_sms_send(Sim800Handle, Device.smsSender.ptrPhoneNumber, Device.smsSender.txt, wait_for_single_sms_response)) {
-                Device.State = DEVICE_STATE_AWAIT_RESPONSE;
-            }
+            // if (sim800_sms_send(Sim800Handle, Device.smsSender.ptrPhoneNumber, Device.smsSender.txt, wait_for_single_sms_response)) {
+            //     Device.State = DEVICE_STATE_AWAIT_RESPONSE;
+            // }
         break;
 
         case DEVICE_STATE_RESET:
@@ -329,40 +329,40 @@ static void run() {
             break;
     }
 
-    switch (Device.userLed.State) {
-        case UserLedState_Undefined:
-            if (Sim800Handle->Gsm.State == SIM800_GSM_STATE_READY) {
-                discrete_output_set(pUserLed,true);
-                Device.userLed.State = UserLedState_GsmReady;
-            } else {
-                discrete_output_reset(pUserLed);
-                discrete_output_meander_start(pUserLed, 1000, 1000, DISCRETE_OUTPUT_COUNT_INFINITE);
-                Device.userLed.State = UserLedState_GsmNotReady;
-            }
-        break;
-
-        case UserLedState_GsmNotReady:
-            if (Sim800Handle->Gsm.State == SIM800_GSM_STATE_READY) {
-                discrete_output_set(pUserLed,true);
-                Device.userLed.State = UserLedState_GsmReady;
-            }
-        break;
-
-        case UserLedState_GsmReady:
-            if (Sim800Handle->Gsm.State != SIM800_GSM_STATE_READY) {
-                discrete_output_reset(pUserLed);
-                discrete_output_meander_start(pUserLed, 1000, 1000, DISCRETE_OUTPUT_COUNT_INFINITE);
-                Device.userLed.State = UserLedState_GsmNotReady;
-            }
-        break;
-
-        case UserLedState_ResetDevice:
-            if (!discrete_output_is_in_sequence(pUserLed)) {
-                HAL_NVIC_SystemReset();
-                Device.userLed.State = UserLedState_Undefined;
-            }
-        break;
-    }
+    // switch (Device.userLed.State) {
+    //     case UserLedState_Undefined:
+    //         if (Sim800Handle->Gsm.State == SIM800_GSM_STATE_READY) {
+    //             discrete_output_set(pUserLed,true);
+    //             Device.userLed.State = UserLedState_GsmReady;
+    //         } else {
+    //             discrete_output_reset(pUserLed);
+    //             discrete_output_meander_start(pUserLed, 1000, 1000, DISCRETE_OUTPUT_COUNT_INFINITE);
+    //             Device.userLed.State = UserLedState_GsmNotReady;
+    //         }
+    //     break;
+    //
+    //     case UserLedState_GsmNotReady:
+    //         if (Sim800Handle->Gsm.State == SIM800_GSM_STATE_READY) {
+    //             discrete_output_set(pUserLed,true);
+    //             Device.userLed.State = UserLedState_GsmReady;
+    //         }
+    //     break;
+    //
+    //     case UserLedState_GsmReady:
+    //         if (Sim800Handle->Gsm.State != SIM800_GSM_STATE_READY) {
+    //             discrete_output_reset(pUserLed);
+    //             discrete_output_meander_start(pUserLed, 1000, 1000, DISCRETE_OUTPUT_COUNT_INFINITE);
+    //             Device.userLed.State = UserLedState_GsmNotReady;
+    //         }
+    //     break;
+    //
+    //     case UserLedState_ResetDevice:
+    //         if (!discrete_output_is_in_sequence(pUserLed)) {
+    //             HAL_NVIC_SystemReset();
+    //             Device.userLed.State = UserLedState_Undefined;
+    //         }
+    //     break;
+    // }
 }
 
 static void bind_phone_number(const char* ptrPhoneNum) {

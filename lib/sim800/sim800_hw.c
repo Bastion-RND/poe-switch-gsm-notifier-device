@@ -1,17 +1,13 @@
-#include <stdio.h>
-#include <string.h>
-
-#include "exported.h"
-#include "sim800.h"
-#include "sim800_const.h"
-#include "sim800_hw.h"
-#include "utf8_xcoder.h"
-
-Sim800Handle_t Sim800;
-
-void sim800_rx_buffer_flush(void);
-void sim800_tx_buffer_flush(void);
-
+// #include <stdio.h>
+// #include <string.h>
+//
+// #include "sim800.h"
+// #include "sim800_const.h"
+// #include "utf8_xcoder.h"
+//
+// static uint8_t tx_buf[64];
+// static uint8_t rx_buf[256];
+//
 // static Sim800Parser_t ParsersList[SIM800_PARSERS_MAX];
 //
 // static void switch_module_state(Sim800Handle_t* p, Sim800ModuleState_t);
@@ -296,111 +292,6 @@ void sim800_tx_buffer_flush(void);
 //     p->Module.State = NewState;
 // }
 //
-// static void module_init_process(Sim800Handle_t* p, Sim800Event_t event, void* param) {
-//     (void)param;
-//     static int stage;
-//
-//     switch (event) {
-//         case SIM800_EVENT_INITIALIZATION_BEGIN:
-//             stage = 0;
-//             p->Command.attemptCounter = 0;
-//             break;
-//
-//         case SIM800_EVENT_CMD_RESULT_ERR:
-//             sim800_timer_start(p, REPEAT_CMD_TIMEOUT_MS, module_init_process);
-//             break;
-//
-//         case SIM800_EVENT_TIMER_REACHED:
-//         case SIM800_EVENT_CMD_RESULT_TIMEOUT:
-//             p->Command.attemptCounter++;
-//             if (p->Command.attemptCounter >= CMD_MAX_ATTEMPT) {
-//                 switch_module_state(p, SIM800_MODULE_STATE_ERROR);
-//             }
-//             break;
-//
-//         case SIM800_EVENT_CMD_RESULT_OK:
-//             stage++; /* switch to next step */
-//             p->Command.attemptCounter = 0;
-//             break;
-//
-//         default:
-//             return;
-//     }
-//
-//     if (p->Module.Timer.active || p->Module.State == SIM800_MODULE_STATE_ERROR) {return;}
-//
-//     if (p->Module.State == SIM800_MODULE_STATE_INITIALIZATION || p->Module.State == SIM800_MODULE_STATE_UNDEFINED) {
-//         switch (stage) {
-//             case 0:
-//                 debug_printf("[SIM800] init stage: check module ready to proceed\n");
-//             sim800_cmd(p, AT, 1000, module_init_process, NULL, SIM800_FLOW_ASYNC);
-//             break;
-//
-//             case 1:
-//                 debug_printf("[SIM800] init stage: reset settings\n");
-//             sim800_cmd(p, REQUEST_RST_TO_DEF, 1000, module_init_process, NULL, SIM800_FLOW_ASYNC);
-//             break;
-//
-//             case 2:
-//             debug_printf("[SIM800] init stage: echo off\n");
-//             sim800_cmd(p, "ATE0\n", 1000, module_init_process, NULL, SIM800_FLOW_ASYNC);
-//             break;
-//
-//             case 3:
-//                 debug_printf("[SIM800] init stage: get module model\n");
-//             sim800_cmd(p, REQUEST_MODEL, 1000, module_init_process, NULL, SIM800_FLOW_ASYNC);
-//             break;
-//
-//             case 4:
-//                 debug_printf("[SIM800] init stage: get module revision\n");
-//             sim800_cmd(p, REQUEST_REV, 1000, module_init_process, NULL, SIM800_FLOW_ASYNC);
-//             break;
-//
-//             case 5:
-//                 debug_printf("[SIM800] init stage: get module serial number\n");
-//             sim800_cmd(p, REQUEST_SN, 1000, module_init_process, NULL, SIM800_FLOW_ASYNC);
-//             break;
-//
-//             case 6:
-//                 debug_printf("[SIM800] init stage: check SIM card is ready\n");
-//                 sim800_cmd(p, GET_SIM_STATE, 1000, module_init_process, NULL, SIM800_FLOW_ASYNC);
-//             break;
-//
-//             case 7:
-//                 debug_printf("[SIM800] init stage: set network registration info format\n");
-//                 sim800_cmd(p, "AT+CREG=2\n", 1000, module_init_process, NULL, SIM800_FLOW_ASYNC);
-//             break;
-//
-//             case 8:
-//                 debug_printf("[SIM800] init stage: set local timestamp mode\n");
-//                 sim800_cmd(p, "AT+CLTS=1\n", 1000, module_init_process, NULL, SIM800_FLOW_ASYNC);
-//             break;
-//
-//             case 9:
-//                 debug_printf("[SIM800] init stage: set operator selection\n");
-//                 sim800_cmd(p, "AT+COPS=0,2\n", 1000, module_init_process, NULL, SIM800_FLOW_ASYNC);
-//             break;
-//
-//             case 10:
-//                 debug_printf("[SIM800] init stage: set SMS text mode\n");
-//                 sim800_cmd(p, "AT+CMGF=1\n", 1000, module_init_process, NULL, SIM800_FLOW_ASYNC);
-//             break;
-//
-//             case 11:
-//                 debug_printf("[SIM800] init stage: set SMS notification mode\n");
-//                 sim800_cmd(p, "AT+CNMI=1,2,0,0,0\n", 1000, module_init_process, NULL, SIM800_FLOW_ASYNC);
-//                 break;
-//
-//             case 12:
-//                 debug_printf("[SIM800] init stage: set SMS text encoding\n");
-//                 sim800_cmd(p, "AT+CSCS=\"UCS2\"\n", 1000, module_init_process, NULL, SIM800_FLOW_ASYNC);
-//             break;
-//
-//             default:
-//             break;
-//         }
-//     }
-// }
 //
 // Sim800Handle_t *sim800_init(void) {
 //     Sim800Handle_t* p = malloc(sizeof(Sim800Handle_t));
@@ -618,65 +509,170 @@ void sim800_tx_buffer_flush(void);
 //         );
 // }
 
-static void switch_state(Sim800State_t NewState) {
-    switch (NewState) {
-        case SIM800_STATE_UNDEFINED:
-            debug_printf("[SIM800] switch state to UNDEFINED\n");
-            Sim800.interface.mutex = false;
-            sim800_rx_buffer_flush();
-            sim800_tx_buffer_flush();
-        // reset middle level modules
+#include "main.h"
+#include "sim800_hw.h"
+#include "sim800_at_interface.h"
+// #include "sim800.h"
+
+Sim800Hardware_t Sim800Hardware;
+
+void sim800_pin_reset_on(bool);
+
+static void sim800_hw_init_process(Sim800AtInterfaceEvent_t event, void* param) {
+    (void)param;
+    static int stage;
+
+    switch (event) {
+        case SIM800_EVENT_INITIALIZATION_BEGIN:
+            stage = 0;
+            p->Command.attemptCounter = 0;
             break;
-        case SIM800_STATE_INIT_HW:
-            debug_printf("[SIM800] switch state to INIT_HW\n");
-            Sim800.hw->init();
+
+        case SIM800_EVENT_CMD_RESULT_ERR:
+            sim800_timer_start(p, REPEAT_CMD_TIMEOUT_MS, module_init_process);
             break;
-        case SIM800_STATE_INIT_GSM:
-            debug_printf("[SIM800] switch state to INIT_GSM\n");
+
+        case SIM800_EVENT_TIMER_REACHED:
+        case SIM800_EVENT_CMD_RESULT_TIMEOUT:
+            p->Command.attemptCounter++;
+            if (p->Command.attemptCounter >= CMD_MAX_ATTEMPT) {
+                switch_module_state(p, SIM800_MODULE_STATE_ERROR);
+            }
             break;
-        case SIM800_STATE_INIT_SMS:
-            debug_printf("[SIM800] switch state to INIT_SMS\n");
+
+        case SIM800_EVENT_CMD_RESULT_OK:
+            stage++; /* switch to next step */
+            p->Command.attemptCounter = 0;
             break;
-        case SIM800_STATE_READY:
-            debug_printf("[SIM800] switch state to READY\n");
-            break;
+
         default:
+            return;
+    }
+
+    if (p->Module.Timer.active || p->Module.State == SIM800_MODULE_STATE_ERROR) {return;}
+
+    if (p->Module.State == SIM800_MODULE_STATE_INITIALIZATION || p->Module.State == SIM800_MODULE_STATE_UNDEFINED) {
+        switch (stage) {
+            case 0:
+                debug_printf("[SIM800] init stage: check module ready to proceed\n");
+            sim800_cmd(p, AT, 1000, module_init_process, NULL, SIM800_FLOW_ASYNC);
+            break;
+
+            case 1:
+                debug_printf("[SIM800] init stage: reset settings\n");
+            sim800_cmd(p, REQUEST_RST_TO_DEF, 1000, module_init_process, NULL, SIM800_FLOW_ASYNC);
+            break;
+
+            case 2:
+            debug_printf("[SIM800] init stage: echo off\n");
+            sim800_cmd(p, "ATE0\n", 1000, module_init_process, NULL, SIM800_FLOW_ASYNC);
+            break;
+
+            case 3:
+                debug_printf("[SIM800] init stage: get module model\n");
+            sim800_cmd(p, REQUEST_MODEL, 1000, module_init_process, NULL, SIM800_FLOW_ASYNC);
+            break;
+
+            case 4:
+                debug_printf("[SIM800] init stage: get module revision\n");
+            sim800_cmd(p, REQUEST_REV, 1000, module_init_process, NULL, SIM800_FLOW_ASYNC);
+            break;
+
+            case 5:
+                debug_printf("[SIM800] init stage: get module serial number\n");
+            sim800_cmd(p, REQUEST_SN, 1000, module_init_process, NULL, SIM800_FLOW_ASYNC);
+            break;
+
+            case 6:
+                debug_printf("[SIM800] init stage: check SIM card is ready\n");
+                sim800_cmd(p, GET_SIM_STATE, 1000, module_init_process, NULL, SIM800_FLOW_ASYNC);
+            break;
+
+            case 7:
+                debug_printf("[SIM800] init stage: set network registration info format\n");
+                sim800_cmd(p, "AT+CREG=2\n", 1000, module_init_process, NULL, SIM800_FLOW_ASYNC);
+            break;
+
+            case 8:
+                debug_printf("[SIM800] init stage: set local timestamp mode\n");
+                sim800_cmd(p, "AT+CLTS=1\n", 1000, module_init_process, NULL, SIM800_FLOW_ASYNC);
+            break;
+
+            case 9:
+                debug_printf("[SIM800] init stage: set operator selection\n");
+                sim800_cmd(p, "AT+COPS=0,2\n", 1000, module_init_process, NULL, SIM800_FLOW_ASYNC);
+            break;
+
+            case 10:
+                debug_printf("[SIM800] init stage: set SMS text mode\n");
+                sim800_cmd(p, "AT+CMGF=1\n", 1000, module_init_process, NULL, SIM800_FLOW_ASYNC);
+            break;
+
+            case 11:
+                debug_printf("[SIM800] init stage: set SMS notification mode\n");
+                sim800_cmd(p, "AT+CNMI=1,2,0,0,0\n", 1000, module_init_process, NULL, SIM800_FLOW_ASYNC);
+                break;
+
+            case 12:
+                debug_printf("[SIM800] init stage: set SMS text encoding\n");
+                sim800_cmd(p, "AT+CSCS=\"UCS2\"\n", 1000, module_init_process, NULL, SIM800_FLOW_ASYNC);
+            break;
+
+            default:
+            break;
+        }
+    }
+}
+
+static void switch_state(Sim800HwState_t NewState) {
+    switch (NewState) {
+        case SIM800_HW_STATE_UNDEFINED:
+            debug_printf("[SIM800 HW] switch state to UNDEFINED\n");
+            break;
+
+        case SIM800_HW_STATE_REBOOT_PENDING:
+            sim800_pin_reset_on(true);
+            Sim800Hardware.timeoutMs = 1000;
+            Sim800Hardware.timestampMs = HAL_GetTick();
+            debug_printf("[SIM800 HW] switch state to PENDING\n");
+            break;
+
+        case SIM800_HW_STATE_INITIALIZATION:
+            sim800_pin_reset_on(false);
+            Sim800Hardware.timeoutMs = 0;
+            debug_printf("[SIM800 HW] switch state to INITIALIZATION\n");
+            break;
+
+        default:
+            debug_printf("[SIM800 HW] switch state to UNKNOWN\n");
             break;
     }
-    Sim800.state = NewState;
+    Sim800Hardware.State = NewState;
 }
 
 static void init() {
-    switch_state(SIM800_STATE_UNDEFINED);
+    debug_printf("[SIM800 HW] init\n");
+    switch_state(SIM800_HW_STATE_UNDEFINED);
 }
 
 static void run() {
-    if (HAL_GetTick() % 1000 != 0) {return;}
-    switch (Sim800.state) {
-     case SIM800_STATE_UNDEFINED:
-         switch_state(SIM800_STATE_INIT_HW);
-        break;
-    case SIM800_STATE_INIT_HW:
-        switch_state(SIM800_STATE_INIT_GSM);
-        break;
-    case SIM800_STATE_INIT_GSM:
-        switch_state(SIM800_STATE_INIT_SMS);
-        break;
-    case SIM800_STATE_INIT_SMS:
-        switch_state(SIM800_STATE_READY);
-        break;
-    case SIM800_STATE_READY:
-        break;
-    default:
-        break;
+    if (HAL_GetTick() - Sim800Hardware.timestampMs > Sim800Hardware.timeoutMs) {
+        switch (Sim800Hardware.State) {
+            case SIM800_HW_STATE_UNDEFINED:
+                switch_state(SIM800_HW_STATE_REBOOT_PENDING);
+            break;
+            case SIM800_HW_STATE_REBOOT_PENDING:
+                switch_state(SIM800_HW_STATE_INITIALIZATION);
+            break;
+            default:
+            break;
+        }
     }
-    Sim800.hw->run();
+
 }
 
-void sim800_create(void) {
-    memset(&Sim800, 0x00, sizeof(Sim800Handle_t));
-    Sim800.init = init;
-    Sim800.run = run;
-    sim800_hw_create();
-    Sim800.hw = &Sim800Hardware;
+void sim800_hw_create() {
+    memset(&Sim800Hardware, 0, sizeof(Sim800Hardware_t));
+    Sim800Hardware.init = init;
+    Sim800Hardware.run = run;
 }

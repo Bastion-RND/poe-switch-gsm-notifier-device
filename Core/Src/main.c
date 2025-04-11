@@ -27,6 +27,7 @@
 #include "discrete_output.h"
 #include "eeprom_in_flash.h"
 #include "sim800.h"
+#include "circular_buffer.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -53,7 +54,12 @@ DMA_HandleTypeDef hdma_adc;
 SEGGER_RTT_CB _SEGGER_RTT;
 char seggerRttUpBuffer[BUFFER_SIZE_UP];
 char seggerRttDownBuffer[BUFFER_SIZE_DOWN];
-Sim800Handle_t* Sim800Handle = NULL;
+
+static uint8_t tx_buf[64];
+static uint8_t rx_buf[256];
+
+cbuf_handle_t txCbufHandle;
+cbuf_handle_t rxCbufHandle;
 
 DiscreteInput_t* pUserButton;
 DiscreteInput_t* pButtonReset;
@@ -79,7 +85,17 @@ static void MX_ADC_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+void sim800_rx_buffer_flush(void) {
 
+}
+
+void sim800_tx_buffer_flush(void) {
+
+}
+
+void sim800_pin_reset_on(bool ena) {
+    (void)ena;
+}
 /* USER CODE END 0 */
 
 /**
@@ -116,14 +132,18 @@ int main(void)
   MX_USART2_UART_Init();
   MX_ADC_Init();
   /* USER CODE BEGIN 2 */
+    txCbufHandle = circular_buf_init(tx_buf, sizeof(tx_buf));
+    rxCbufHandle = circular_buf_init(rx_buf, sizeof(rx_buf));
+
     adc_create();
+    sim800_create();
     device_create();
 
     EepromInFlash.init();
     // EepromInFlash.format();
     Adc.init();
+    Sim800.init();
     Device.init();
-    Sim800Handle = sim800_init();
 
     pUserButton =	discrete_input_init(DiscreteInputActiveLevel_LOW, BUTTON_SEND_SMS_ID);
     pButtonReset = discrete_input_init(DiscreteInputActiveLevel_LOW, BUTTON_RESET_ID);
@@ -141,7 +161,6 @@ int main(void)
   {
     // debug_printf("Hello, world\n");
     // HAL_Delay(1000);
-    sim800_run(Sim800Handle);
     discrete_input_run(pUserButton);
     discrete_input_run(pButtonReset);
     discrete_input_run(pTamper);
@@ -149,6 +168,7 @@ int main(void)
     discrete_output_run(pRelay_2);
     discrete_output_run(pUserLed);
     Adc.run();
+    Sim800.run();
     Device.run();
     if (HAL_GetTick() - timestamp > 5000) {
       timestamp = HAL_GetTick();
