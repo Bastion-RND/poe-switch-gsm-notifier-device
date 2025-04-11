@@ -421,21 +421,36 @@ static void unbind_phone_number(const char* phone_number) {
     }
 }
 
-static void config_set(char* ptrDeviceName, uint8_t notifyPermissions, float batteryLevel) {
-    size_t size = strlen(ptrDeviceName);
-    if (size > MAX_DEVICE_NAME_LENGTH) {
+static void config_set(const char* ptrPhoneNum, char* ptrDeviceName, uint8_t notifyPermissions, float batteryLevel) {
+    if (strlen(ptrDeviceName) > MAX_DEVICE_NAME_LENGTH) {
+        debug_printf("\n[Device] ERROR in \"%s\"\n", __func__);
+        debug_printf("\tName \"%s\" is too long\n", ptrDeviceName);
         return;
     }
     if (batteryLevel < 1.0f || batteryLevel > 99.9f) {
+        debug_printf("\n[Device] ERROR in \"%s\"\n", __func__);
+        debug_printf("\tBattery level \"%d mV\" is out of range\n", (int)(batteryLevel * 1000));
+        return;
+    }
+    bool authorized = false;
+    for (int i = 0; i < MAX_PHONE_COUNT; i++) {
+        if (strcmp(ptrPhoneNum, Device.phoneBook[i].number) == 0) {
+            authorized = true;
+            break;
+        }
+    }
+    if (!authorized) {
+        debug_printf("\n[Device] ERROR in \"%s\"\n", __func__);
+        debug_printf("\tUnauthorized phone number \"%s\" to change config\n", ptrPhoneNum);
         return;
     }
     strcpy(Config.name, ptrDeviceName);
     Config.permissions = notifyPermissions;
     Config.batteryLowThreshold = batteryLevel;
     EepromInFlash.write(EEPROM_ADDR_CONFIG, (uint8_t*)&Config, sizeof(Config_t));
-    debug_printf("[Device] New config are saved, name <%s>, ", ptrDeviceName);
-    debug_printf("permissions <0x%X>, ", Config.permissions);
-    debug_printf("battery low level <%d> mV\n", (int)(Config.batteryLowThreshold * 1000));
+    debug_printf("\n[Device] New config are saved:\n\tName \"%s\", ", ptrDeviceName);
+    debug_printf("permissions \"0x%X\", ", Config.permissions);
+    debug_printf("battery low level \"%d mV\"\n", (int)(Config.batteryLowThreshold * 1000));
 }
 
 static void config_get(char* ptrPhoneNum) {
