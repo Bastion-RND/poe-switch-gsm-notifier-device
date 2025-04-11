@@ -195,7 +195,7 @@ static bool prepare_event_message(int i) {
     return result;
 }
 
-bool join_numbers() {
+static bool join_numbers() {
     bool result = false;
     Device.smsSender.txt[0] = '\0';
     for (int i = 0; i < Device.phoneCount; i++) {
