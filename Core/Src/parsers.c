@@ -22,68 +22,28 @@ static bool check_phone_number(char* phone_number) {
 
 bool check_comma(const char* text) { return (*text == ','); }
 
-bool parse_action(const char* text, bool* action) {
+bool parse_action(const char actionChar, bool* action) {
     bool result = false;
-    if (*text == '1') {
+    if (actionChar == '1') {
         *action = true;
         result  = true;
-    } else if (*text == '0') {
+    } else if (actionChar == '0') {
         *action = false;
         result  = true;
     }
     return result;
 }
 
-static bool cmd_a_parse(char* ptrPhoneNum, char* ptrTxt) {
-    bool action = false;
-    bool result = false;
-    if (strlen(ptrTxt) == 2 && check_phone_number(ptrPhoneNum)) {
-        while (*ptrTxt != '\0') {
-            if (*ptrTxt != ',') {
-                if (!parse_action(ptrTxt, &action)) {
-                    break;
-                }
-                if (action) {
-                    Device.bind(ptrPhoneNum);
-                } else {
-                    Device.unbind(ptrPhoneNum);
-                }
-                result = true;
-            }
-            ptrTxt++;
-        }
-    }
-    return result;
-}
-
-static bool cmd_b_parse(char* ptrTxt) {
-    bool result = false;
-    bool action  = false;
-    int stage = 0;
-    if (strlen(ptrTxt) == 15) {
-        while (*ptrTxt != '\0') {
-            if (*ptrTxt != ',') {
-                if (stage == 0) {
-                    if (!parse_action(ptrTxt, &action)) {
-                        break;
-                    }
-                    stage = 1;
-                } else {
-                    if (!check_phone_number(ptrTxt)) {
-                        break;
-                    }
-                    if (action) {
-                        Device.bind(ptrTxt);
-                    } else {
-                        Device.unbind(ptrTxt);
-                    }
-                    result = true;
-                }
-            }
-            ptrTxt++;
-        }
-    }
-    return result;
+static bool extract_field(char** pptrStart, char* dest, size_t destLen) {
+    dest[0] = '\0';
+    if (*pptrStart == NULL) return false;
+    char* ptrEnd = strchr(*pptrStart, ',');
+    size_t len = ptrEnd ? (size_t)(ptrEnd - *pptrStart) : strlen(*pptrStart);
+    if (len > destLen) return false;
+    strncpy(dest, *pptrStart, len);
+    dest[len] = '\0';
+    *pptrStart = ptrEnd ? ptrEnd + 1 : NULL;
+    return true;
 }
 
 static bool parse_relay_state(const char* text, int* state) {
@@ -101,15 +61,42 @@ static bool parse_relay_state(const char* text, int* state) {
     return result;
 }
 
-static bool extract_field(char** pptrStart, char* dest, size_t destLen) {
-    dest[0] = '\0';
-    if (*pptrStart == NULL) return false;
-    char* ptrEnd = strchr(*pptrStart, ',');
-    size_t len = ptrEnd ? (size_t)(ptrEnd - *pptrStart) : strlen(*pptrStart);
-    if (len > destLen) return false;
-    strncpy(dest, *pptrStart, len);
-    dest[len] = '\0';
-    *pptrStart = ptrEnd ? ptrEnd + 1 : NULL;
+static bool cmd_a_parse(char* ptrPhoneNum, char* ptrTxt) {
+    char strBuf[1 + 1];
+    bool action = false;
+    char* pStart = strchr(ptrTxt, ',');
+    if (pStart == NULL) return false;
+    pStart += 1;
+    if (!extract_field(&pStart, strBuf, 1)) return false;
+    if (!parse_action(strBuf[0], &action)) return false;
+    debug_printf("[Parsers] Parsing \"a\" is successfully\n");
+    debug_printf("\t %s request for \"%s\"\n", action ? "bind" : "unbind", ptrPhoneNum);
+    // if (action) {
+    //     Device.bind(ptrPhoneNum);
+    // } else {
+    //     Device.unbind(ptrPhoneNum);
+    // }
+    return true;
+}
+
+static bool cmd_b_parse(char* ptrTxt) {
+    char actionBuf[1 + 1];
+    char phoneBuf[PHONE_LENGTH + 1];
+    bool action  = false;
+    char* pStart = strchr(ptrTxt, ',');
+    if (pStart == NULL) return false;
+    pStart += 1;
+    if (!extract_field(&pStart, actionBuf, 1)) return false;
+    if (!parse_action(actionBuf[0], &action)) return false;
+    if (!extract_field(&pStart, phoneBuf, PHONE_LENGTH)) return false;
+    if (!check_phone_number(phoneBuf)) return false;
+    debug_printf("[Parsers] Parsing \"b\" is successfully\n");
+    debug_printf("\t %s request for \"%s\"\n", action ? "bind" : "unbind", phoneBuf);
+    // if (action) {
+    //     Device.bind(ptrTxt);
+    // } else {
+    //     Device.unbind(ptrTxt);
+    // }
     return true;
 }
 
@@ -124,6 +111,10 @@ static bool cmd_r_parse(char* ptrTxt) {
     if (!parse_relay_state(strBuf, &relay1State)) return false;
     if (!extract_field(&pStart, strBuf, 1)) return false;
     if (!parse_relay_state(strBuf, &relay2State)) return false;
+    debug_printf("[Parsers] Parsing \"r\" is successfully\n");
+    debug_printf("\tRelay set state: ");
+    debug_printf("Relay 1 - \"%d\", ", relay1State);
+    debug_printf("Relay 2 - \"%d\"\n", relay2State);
     if (relay1State >= 0) {
         discrete_output_set(pRelay_1, (bool)relay1State);
         // DeviceEvent_t event = (bool)relay1State ? DeviceEvent_Relay1On: DeviceEvent_Relay1Off;
@@ -134,9 +125,6 @@ static bool cmd_r_parse(char* ptrTxt) {
         // DeviceEvent_t event = (bool)relay2State ? DeviceEvent_Relay2On: DeviceEvent_Relay2Off;
         // Device.event_append(event);  //FIXME uncomment it
     }
-    debug_printf("[Parsers] Relay set state:\n");
-    debug_printf("\tRelay 1 - \"%d\"\n", relay1State);
-    debug_printf("\tRelay 2 - \"%d\"\n", relay2State);
     return true;
 }
 
@@ -162,7 +150,12 @@ static bool cmd_c_parse(const char* ptrPhoneNum, const char* text) {
     if (*endPtr != '\0') {
         return false;
     }
-    Device.config_set(ptrPhoneNum, deviceName, permissions, batteryLevel);
+    debug_printf("[Parsers] Parsing \"c\" is successfully\n");
+    debug_printf("\tNew config: ");
+    debug_printf("name \"%s\", ", deviceName);
+    debug_printf("permissions \"0x%d\", ", permissions);
+    debug_printf("battery low voltage \"%d mV\"\n", (int)(batteryLevel * 1000));
+    // Device.config_set(ptrPhoneNum, deviceName, permissions, batteryLevel);
     return true;
 }
 
@@ -174,10 +167,10 @@ void on_new_sms_callback(char* ptrPhoneNum, char* ptrTxt) {
         if (strlen(ptrTxt) >= 1) {
             switch (*ptrTxt) {
             case 'a':
-                result = cmd_a_parse(ptrPhoneNum, ++ptrTxt);
+                result = cmd_a_parse(ptrPhoneNum, ptrTxt);
             break;
             case 'b':
-                result = cmd_b_parse(++ptrTxt);
+                result = cmd_b_parse(ptrTxt);
             break;
             case 'c':
                 result = cmd_c_parse(ptrPhoneNum, ptrTxt);
