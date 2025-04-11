@@ -71,11 +71,11 @@ static bool cmd_a_parse(char* ptrPhoneNum, char* ptrTxt) {
     if (!parse_action(strBuf[0], &action)) return false;
     debug_printf("[Parsers] Parsing \"a\" is successfully\n");
     debug_printf("\t %s request for \"%s\"\n", action ? "bind" : "unbind", ptrPhoneNum);
-    // if (action) {
-    //     Device.bind(ptrPhoneNum);
-    // } else {
-    //     Device.unbind(ptrPhoneNum);
-    // }
+    if (action) {
+        Device.bind(ptrPhoneNum);
+    } else {
+        Device.unbind(ptrPhoneNum);
+    }
     return true;
 }
 
@@ -92,11 +92,11 @@ static bool cmd_b_parse(char* ptrTxt) {
     if (!check_phone_number(phoneBuf)) return false;
     debug_printf("[Parsers] Parsing \"b\" is successfully\n");
     debug_printf("\t %s request for \"%s\"\n", action ? "bind" : "unbind", phoneBuf);
-    // if (action) {
-    //     Device.bind(ptrTxt);
-    // } else {
-    //     Device.unbind(ptrTxt);
-    // }
+    if (action) {
+        Device.bind(ptrTxt);
+    } else {
+        Device.unbind(ptrTxt);
+    }
     return true;
 }
 
@@ -155,7 +155,7 @@ static bool cmd_c_parse(const char* ptrPhoneNum, const char* text) {
     debug_printf("name \"%s\", ", deviceName);
     debug_printf("permissions \"0x%d\", ", permissions);
     debug_printf("battery low voltage \"%d mV\"\n", (int)(batteryLevel * 1000));
-    // Device.config_set(ptrPhoneNum, deviceName, permissions, batteryLevel);
+    Device.config_set(ptrPhoneNum, deviceName, permissions, batteryLevel);
     return true;
 }
 
