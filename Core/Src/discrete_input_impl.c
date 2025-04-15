@@ -2,11 +2,6 @@
 #include "discrete_input.h"
 #include "device.h"
 
-#include "sim800.h"
-#include "sim800_gsm_types.h"
-
-extern Sim800Handle_t* Sim800Handle;
-
 bool
 discrete_input_ll_init(DiscreteInput_t* p) {
     bool result = false;
@@ -42,21 +37,6 @@ uint32_t
 discrete_input_ll_get_tick() {
     return HAL_GetTick();
 }
-
-void send_cb(Sim800SmsEvent_t ev) {
-    switch (ev) {
-        case SIM800_EVENT_SEND_SMS_ERROR:
-            debug_printf("Send ERROR\n");
-            break;
-        case SIM800_EVENT_SEND_SMS_SUCCESS:
-            debug_printf("Send SUCCESS\n");
-            break;
-        default:
-            debug_printf("UNKNOWN EVENT\n");
-            break;
-    }
-}
-
 
 void
 discrete_input_opened_callback(DiscreteInput_t *p) {

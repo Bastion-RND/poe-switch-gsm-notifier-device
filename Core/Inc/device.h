@@ -4,7 +4,7 @@
 #include <stdbool.h>
 
 #include "main.h"
-#include "sim800_gsm.h"
+#include "sim800.h"
 
 #define MAX_PHONE_COUNT           15
 #define PHONE_LENGTH              12

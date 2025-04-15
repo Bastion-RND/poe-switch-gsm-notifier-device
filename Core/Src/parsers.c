@@ -159,7 +159,7 @@ static bool cmd_c_parse(const char* ptrPhoneNum, const char* text) {
     return true;
 }
 
-void on_new_sms_callback(char* ptrPhoneNum, char* ptrTxt) {
+void sim800_on_new_sms_callback(char* ptrPhoneNum, char* ptrTxt) {
     debug_printf("\n[Parsers] Start, phone: <%s>, text: <%s>\n", ptrPhoneNum, ptrTxt);
     bool result = false;
     if (check_phone_number(ptrPhoneNum) && *ptrTxt == '$') {

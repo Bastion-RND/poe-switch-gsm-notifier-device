@@ -55,11 +55,11 @@ SEGGER_RTT_CB _SEGGER_RTT;
 char seggerRttUpBuffer[BUFFER_SIZE_UP];
 char seggerRttDownBuffer[BUFFER_SIZE_DOWN];
 
-static uint8_t tx_buf[64];
-static uint8_t rx_buf[256];
+uint8_t rxBuffer[SIM800_RX_BUFFER_SIZE];
+uint8_t txBuffer[SIM800_TX_BUFFER_SIZE];
 
-cbuf_handle_t txCbufHandle;
-cbuf_handle_t rxCbufHandle;
+cbuf_handle_t cbuf_rx;
+cbuf_handle_t cbuf_tx;
 
 DiscreteInput_t* pUserButton;
 DiscreteInput_t* pButtonReset;
@@ -85,17 +85,7 @@ static void MX_ADC_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-void sim800_rx_buffer_flush(void) {
 
-}
-
-void sim800_tx_buffer_flush(void) {
-
-}
-
-void sim800_pin_reset_on(bool ena) {
-    (void)ena;
-}
 /* USER CODE END 0 */
 
 /**
@@ -132,8 +122,8 @@ int main(void)
   MX_USART2_UART_Init();
   MX_ADC_Init();
   /* USER CODE BEGIN 2 */
-    txCbufHandle = circular_buf_init(tx_buf, sizeof(tx_buf));
-    rxCbufHandle = circular_buf_init(rx_buf, sizeof(rx_buf));
+    cbuf_tx = circular_buf_init(txBuffer, sizeof(txBuffer));
+    cbuf_rx = circular_buf_init(rxBuffer, sizeof(rxBuffer));
 
     adc_create();
     sim800_create();
