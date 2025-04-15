@@ -43,11 +43,16 @@ extern "C" {
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "SEGGER_RTT.h"
+#include <stdio.h>
+#include <string.h>
+#include <stdbool.h>
+#include "circular_buffer.h"
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
-
+extern cbuf_handle_t cbuf_rx;
+extern cbuf_handle_t cbuf_tx;
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/
