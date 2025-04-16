@@ -42,7 +42,9 @@ extern "C" {
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#if defined(DEBUG)
 #include "SEGGER_RTT.h"
+#endif
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>

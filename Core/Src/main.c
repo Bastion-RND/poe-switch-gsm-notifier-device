@@ -51,9 +51,11 @@ DMA_HandleTypeDef hdma_adc;
 
 /* USER CODE BEGIN PV */
 // SEGGER RTT: workaround for large memory mcu`s
+#ifdef DEBUG
 SEGGER_RTT_CB _SEGGER_RTT;
 char seggerRttUpBuffer[BUFFER_SIZE_UP];
 char seggerRttDownBuffer[BUFFER_SIZE_DOWN];
+#endif
 
 uint8_t rxBuffer[SIM800_RX_BUFFER_SIZE];
 uint8_t txBuffer[SIM800_TX_BUFFER_SIZE];
