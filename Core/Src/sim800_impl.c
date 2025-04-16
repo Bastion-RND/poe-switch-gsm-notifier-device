@@ -1,11 +1,18 @@
 #include "main.h"
 
-void sim800_pin_reset_on(void) {
+void sim800_pin_pwr_key_on(void) {
     HAL_GPIO_WritePin(SIM800_RESET_GPIO_Port, SIM800_RESET_Pin, GPIO_PIN_SET);
 }
 
-void sim800_pin_reset_off(void) {
+void sim800_pin_pwr_key_off(void) {
     HAL_GPIO_WritePin(SIM800_RESET_GPIO_Port, SIM800_RESET_Pin, GPIO_PIN_RESET);
+}
+
+void     sim800_pin_module_power_on() {
+    // TODO
+}
+void     sim800_pin_module_power_off() {
+    // TODO
 }
 
 void sim800_rx_buffer_flush(void) { circular_buf_reset(cbuf_rx); }

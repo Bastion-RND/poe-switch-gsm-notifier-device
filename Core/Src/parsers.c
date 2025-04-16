@@ -117,13 +117,13 @@ static bool cmd_r_parse(char* ptrTxt) {
     debug_printf("Relay 2 - \"%d\"\n", relay2State);
     if (relay1State >= 0) {
         discrete_output_set(pRelay_1, (bool)relay1State);
-        // DeviceEvent_t event = (bool)relay1State ? DeviceEvent_Relay1On: DeviceEvent_Relay1Off;
-        // Device.event_append(event); //FIXME uncomment it
+        DeviceEvent_t event = (bool)relay1State ? DeviceEvent_Relay1On: DeviceEvent_Relay1Off;
+        Device.event_append(event);
     }
     if (relay2State >= 0) {
         discrete_output_set(pRelay_2, (bool)relay2State);
-        // DeviceEvent_t event = (bool)relay2State ? DeviceEvent_Relay2On: DeviceEvent_Relay2Off;
-        // Device.event_append(event);  //FIXME uncomment it
+        DeviceEvent_t event = (bool)relay2State ? DeviceEvent_Relay2On: DeviceEvent_Relay2Off;
+        Device.event_append(event);
     }
     return true;
 }
