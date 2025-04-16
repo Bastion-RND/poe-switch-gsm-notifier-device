@@ -1,12 +1,10 @@
-#include <stdbool.h>
-#include <string.h>
-
 #include "device.h"
 
-#include <stdio.h>
-
+#include "adc.h"
+#include "sim800.h"
 #include "exported.h"
 #include "eeprom_in_flash.h"
+#include "discrete_output.h"
 
 Config_t Config;
 Device_t Device;

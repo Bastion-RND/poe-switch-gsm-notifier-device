@@ -1,8 +1,6 @@
 #ifndef DEVICE_H
 #define DEVICE_H
 
-#include <stdbool.h>
-
 #include "main.h"
 #include "sim800.h"
 
