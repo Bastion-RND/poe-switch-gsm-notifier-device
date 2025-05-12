@@ -1,7 +1,7 @@
 #ifndef DEVICE_H
 #define DEVICE_H
 
-#include "main.h"
+#include "../Core/Inc/main.h"
 #include "sim800.h"
 
 #define MAX_PHONE_COUNT           15

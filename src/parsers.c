@@ -93,9 +93,9 @@ static bool cmd_b_parse(char* ptrTxt) {
     debug_printf("[Parsers] Parsing \"b\" is successfully\n");
     debug_printf("\t %s request for \"%s\"\n", action ? "bind" : "unbind", phoneBuf);
     if (action) {
-        Device.bind(ptrTxt);
+        Device.bind(phoneBuf);
     } else {
-        Device.unbind(ptrTxt);
+        Device.unbind(phoneBuf);
     }
     return true;
 }

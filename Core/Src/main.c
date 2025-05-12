@@ -21,13 +21,13 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "adc.h"
-#include "device.h"
+#include "../../inc/adc.h"
+#include "../../inc/device.h"
+#include "circular_buffer.h"
 #include "discrete_input.h"
 #include "discrete_output.h"
 #include "eeprom_in_flash.h"
 #include "sim800.h"
-#include "circular_buffer.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -63,7 +63,7 @@ uint8_t txBuffer[SIM800_TX_BUFFER_SIZE];
 cbuf_handle_t cbuf_rx;
 cbuf_handle_t cbuf_tx;
 
-DiscreteInput_t* pUserButton;
+DiscreteInput_t* p220Sensor;
 DiscreteInput_t* pButtonReset;
 DiscreteInput_t* pTamper;
 
@@ -134,10 +134,11 @@ int main(void)
     EepromInFlash.init();
     // EepromInFlash.format();
     Adc.init();
+    HAL_ADCEx_Calibration_Start(&hadc);
     Sim800.init();
     Device.init();
 
-    pUserButton =	discrete_input_init(DiscreteInputActiveLevel_LOW, BUTTON_SEND_SMS_ID);
+    p220Sensor =	discrete_input_init(DiscreteInputActiveLevel_HIGH, BUTTON_220_SENSOR_ID);
     pButtonReset = discrete_input_init(DiscreteInputActiveLevel_LOW, BUTTON_RESET_ID);
     pTamper = discrete_input_init(DiscreteInputActiveLevel_LOW,BUTTON_TAMPER_ID);
 
@@ -153,7 +154,7 @@ int main(void)
   {
     // debug_printf("Hello, world\n");
     // HAL_Delay(1000);
-    discrete_input_run(pUserButton);
+    discrete_input_run(p220Sensor);
     discrete_input_run(pButtonReset);
     discrete_input_run(pTamper);
     discrete_output_run(pRelay_1);
@@ -186,13 +187,12 @@ void SystemClock_Config(void)
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI|RCC_OSCILLATORTYPE_HSI14;
-  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI14|RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.HSI14State = RCC_HSI14_ON;
-  RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
   RCC_OscInitStruct.HSI14CalibrationValue = 16;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
   RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL6;
   RCC_OscInitStruct.PLL.PREDIV = RCC_PREDIV_DIV1;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
@@ -255,17 +255,9 @@ static void MX_ADC_Init(void)
 
   /** Configure for the selected ADC regular channel to be converted.
   */
-  sConfig.Channel = ADC_CHANNEL_0;
+  sConfig.Channel = ADC_CHANNEL_11;
   sConfig.Rank = ADC_RANK_CHANNEL_NUMBER;
-  sConfig.SamplingTime = ADC_SAMPLETIME_1CYCLE_5;
-  if (HAL_ADC_ConfigChannel(&hadc, &sConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  /** Configure for the selected ADC regular channel to be converted.
-  */
-  sConfig.Channel = ADC_CHANNEL_1;
+  sConfig.SamplingTime = ADC_SAMPLETIME_55CYCLES_5;
   if (HAL_ADC_ConfigChannel(&hadc, &sConfig) != HAL_OK)
   {
     Error_Handler();
@@ -369,37 +361,32 @@ static void MX_GPIO_Init(void)
   /* USER CODE END MX_GPIO_Init_1 */
 
   /* GPIO Ports Clock Enable */
+  __HAL_RCC_GPIOF_CLK_ENABLE();
   __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, USER_LED_Pin|SIM800_RESET_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(SIM800_RESET_GPIO_Port, SIM800_RESET_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, RELAY_2_Pin|RELAY_1_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, SIM_OFF_Pin|USER_LED_Pin|RELAY_1_Pin|RELAY_2_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pin : SEND_SMS_BTN_Pin */
-  GPIO_InitStruct.Pin = SEND_SMS_BTN_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(SEND_SMS_BTN_GPIO_Port, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : RESET_BTN_Pin TAMPER_BTN_Pin */
-  GPIO_InitStruct.Pin = RESET_BTN_Pin|TAMPER_BTN_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_PULLUP;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : USER_LED_Pin SIM800_RESET_Pin */
-  GPIO_InitStruct.Pin = USER_LED_Pin|SIM800_RESET_Pin;
+  /*Configure GPIO pin : SIM800_RESET_Pin */
+  GPIO_InitStruct.Pin = SIM800_RESET_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+  HAL_GPIO_Init(SIM800_RESET_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : RELAY_2_Pin RELAY_1_Pin */
-  GPIO_InitStruct.Pin = RELAY_2_Pin|RELAY_1_Pin;
+  /*Configure GPIO pins : RESET_BTN_Pin TAMPER_BTN_Pin ADC_220_Pin */
+  GPIO_InitStruct.Pin = RESET_BTN_Pin|TAMPER_BTN_Pin|ADC_220_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : SIM_OFF_Pin USER_LED_Pin RELAY_1_Pin RELAY_2_Pin */
+  GPIO_InitStruct.Pin = SIM_OFF_Pin|USER_LED_Pin|RELAY_1_Pin|RELAY_2_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;

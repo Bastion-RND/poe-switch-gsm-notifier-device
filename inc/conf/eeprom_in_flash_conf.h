@@ -1,7 +1,7 @@
 #ifndef EEPROM_IN_FLASH_CONF_H_
 #define EEPROM_IN_FLASH_CONF_H_
 
-#include "main.h"
+#include "../../Core/Inc/main.h"
 
 #define EIF_ERASED_DATA         (0xFFFFFFFF)
 #define EIF_MCU_FLASH_BASE      (FLASH_BASE)

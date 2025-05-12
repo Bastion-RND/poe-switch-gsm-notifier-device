@@ -9,10 +9,10 @@ void sim800_pin_pwr_key_off(void) {
 }
 
 void     sim800_pin_module_power_on() {
-    // TODO
+    HAL_GPIO_WritePin(SIM_OFF_GPIO_Port, SIM_OFF_Pin, GPIO_PIN_RESET);
 }
 void     sim800_pin_module_power_off() {
-    // TODO
+    HAL_GPIO_WritePin(SIM_OFF_GPIO_Port, SIM_OFF_Pin, GPIO_PIN_SET);
 }
 
 void sim800_rx_buffer_flush(void) { circular_buf_reset(cbuf_rx); }
