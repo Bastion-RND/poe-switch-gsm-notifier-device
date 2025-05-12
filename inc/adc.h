@@ -9,14 +9,9 @@
 #define ADC_SAMPLE_COUNT                    32
 #define ADC_SMOOTH_WINDOW                   16
 #define ADC_POLL_PERIOD_MS                  100
-#define ADC_NO_POWER_220_CHECK_PERIOD_MS    100
 #define ADC_BATTERY_CHECK_PERIOD_MS         100
-#define ADC_NO_POWER_220_CHECK_MAX_COUNT    50
 #define ADC_BATTERY_CHECK_MAX_COUNT         50
 
-#define ADC_220_COEFFICIENT                 1
-
-//FIXME check coefficient and conversion
 #define ADC_BATTERY_DIVIDER_R_TOP	100000.0f	/* Ohm */
 #define ADC_BATTERY_DIVIDER_R_DOWN  3000.0f		/* Ohm */
 #define ADC_BATTERY_COEFFICIENT     (float)(\
@@ -49,12 +44,9 @@ typedef struct MyAdc_ {
     void            (*init) (void);
     void            (*run) (void);
     float           (*getVoltageBattery) (void);
-    float           (*getVoltage220) (void);
     uint32_t        timestampMs;
     MyAdcState_t    State;
     MovingAverage_t MovingAverageBattery;
-    MovingAverage_t MovingAverage220;
-    AdcInputHandler_t power220;
     AdcInputHandler_t battery;
 } MyAdc_t;
 #pragma pack(pop)

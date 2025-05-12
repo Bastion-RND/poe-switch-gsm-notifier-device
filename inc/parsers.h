@@ -1,7 +1,7 @@
 #ifndef PARSERS_H
 #define PARSERS_H
 
-#include "main.h"
+#include "../Core/Inc/main.h"
 
 void command_parser(char* phone_number, char* text);
 

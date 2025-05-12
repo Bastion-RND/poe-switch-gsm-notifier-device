@@ -3,7 +3,7 @@
 
 #define BUTTON_RESET_ID    				    0
 #define BUTTON_TAMPER_ID				    1
-#define BUTTON_SEND_SMS_ID				    100 // TODO remove after debug
+#define BUTTON_220_SENSOR_ID		        2
 
 // #define DISCRETE_INPUT_ENABLE_DEBUG_MESSAGES 1
 

@@ -1,10 +1,10 @@
-#include "device.h"
+#include "../inc/device.h"
 
-#include "adc.h"
-#include "sim800.h"
-#include "exported.h"
-#include "eeprom_in_flash.h"
+#include "../inc/adc.h"
+#include "../inc/exported.h"
 #include "discrete_output.h"
+#include "eeprom_in_flash.h"
+#include "sim800.h"
 
 Config_t Config;
 Device_t Device;
@@ -22,7 +22,7 @@ static void init() {
     if (tag != INIT_TAG) {
         debug_printf("[Device] default initialization...\n");
         strcpy(Config.name, "");
-        Config.permissions = 0b1111; //TODO magic number
+        Config.permissions = 0x0F; //TODO magic number
         Config.batteryLowThreshold = 24.0f; //TODO magic number
         tag = INIT_TAG;
         EepromInFlash.write(EEPROM_ADDR_CONFIG, (uint8_t *) &Config, sizeof(Config_t));
@@ -36,6 +36,8 @@ static void init() {
     debug_printf("[Device] Name <%s>, ", Config.name);
     debug_printf("permissions <0x%X>, ", Config.permissions);
     debug_printf("battery low TH <%d>\n", (int)Config.batteryLowThreshold);
+    char battVoltage[4 + 1];
+    snprintf(battVoltage, sizeof(battVoltage), "%.1f", Config.batteryLowThreshold);
     for (uint8_t i = 0; i < MAX_PHONE_COUNT; i++) {
         uint16_t eepromAddress = EEPROM_ADDR_PHONE_BOOK + i * sizeof(Phone_t);
         Phone_t phone;
@@ -214,9 +216,9 @@ static bool join_numbers() {
 static bool prepare_response_message(int request) {
     bool result = false;
     int idx = 0;
+    char strPermissions[4 + 1];
     switch ((DeviceRequest_t) request) {
         case DeviceRequest_Config:
-            char strPermissions[4 + 1];
             for (idx = 0; idx < NOTIFY_PERMISSION_LENGTH; idx++) {
                 if (Config.permissions & (1 << idx)) {
                     strPermissions[3 - idx] = '1';
@@ -311,7 +313,7 @@ static void run() {
             }
             Device.phoneCount = 0;
             memset(&Config, 0x00, sizeof(Config_t));
-            Config.permissions = 0b1111; //TODO magic number
+            Config.permissions = 0x0F; //TODO magic number
             Config.batteryLowThreshold = 24.0f; //TODO magic number
             EepromInFlash.write(EEPROM_ADDR_CONFIG, (uint8_t *) &Config, sizeof(Config_t));
             for (int i = 0; i < MAX_PHONE_COUNT; i++) {

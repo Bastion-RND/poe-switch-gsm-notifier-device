@@ -74,7 +74,7 @@ Additional information:
 ----------------------------------------------------------------------
 */
 
-#include "../../../Core/Inc/SEGGER_RTT.h"
+#include "SEGGER_RTT.h"
 
 #include <string.h>                 // for memcpy
 
