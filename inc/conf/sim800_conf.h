@@ -1,0 +1,7 @@
+#ifndef SIM800_CONF_H
+#define SIM800_CONF_H
+
+#define SIM800_RX_BUFFER_SIZE   128
+#define SIM800_TX_BUFFER_SIZE   64
+
+#endif //SIM800_CONF_H

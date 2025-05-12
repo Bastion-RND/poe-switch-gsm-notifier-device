@@ -22,6 +22,7 @@
 #include "stm32f0xx_it.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -55,7 +56,7 @@
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
-
+extern DMA_HandleTypeDef hdma_adc;
 /* USER CODE BEGIN EV */
 
 /* USER CODE END EV */
@@ -139,6 +140,57 @@ void SysTick_Handler(void)
 /* For the available peripheral interrupt handler names,                      */
 /* please refer to the startup file (startup_stm32f0xx.s).                    */
 /******************************************************************************/
+
+/**
+  * @brief This function handles DMA1 channel 1 interrupt.
+  */
+void DMA1_Channel1_IRQHandler(void)
+{
+  /* USER CODE BEGIN DMA1_Channel1_IRQn 0 */
+
+  /* USER CODE END DMA1_Channel1_IRQn 0 */
+  HAL_DMA_IRQHandler(&hdma_adc);
+  /* USER CODE BEGIN DMA1_Channel1_IRQn 1 */
+
+  /* USER CODE END DMA1_Channel1_IRQn 1 */
+}
+
+/**
+  * @brief This function handles USART2 global interrupt.
+  */
+void USART2_IRQHandler(void)
+{
+  /* USER CODE BEGIN USART2_IRQn 0 */
+  if (LL_USART_IsActiveFlag_TXE(USART2) && LL_USART_IsEnabledIT_TXE(USART2)) {
+    if (circular_buf_empty(cbuf_tx)) {
+      LL_USART_DisableIT_TXE(USART2);
+    } else {
+      uint8_t data;
+      circular_buf_get(cbuf_tx, &data);
+      LL_USART_TransmitData8(USART2, data);
+    }
+  }
+  if (LL_USART_IsActiveFlag_RXNE(USART2) && LL_USART_IsEnabledIT_RXNE(USART2)) {
+    circular_buf_put(cbuf_rx, LL_USART_ReceiveData8(USART2));
+  }
+  if (LL_USART_IsActiveFlag_ORE(USART2)) {
+    debug_printf("UART overrun\n");
+    (void)LL_USART_ReceiveData8(USART2);
+    LL_USART_ClearFlag_ORE(USART2);
+  }
+  if (LL_USART_IsActiveFlag_FE(USART2)) {
+    (void)LL_USART_ReceiveData8(USART2);
+    LL_USART_ClearFlag_FE(USART2);
+  }
+  if (LL_USART_IsActiveFlag_NE(USART2)) {
+    (void)LL_USART_ReceiveData8(USART2);
+    LL_USART_ClearFlag_NE(USART2);
+  }
+  /* USER CODE END USART2_IRQn 0 */
+  /* USER CODE BEGIN USART2_IRQn 1 */
+
+  /* USER CODE END USART2_IRQn 1 */
+}
 
 /* USER CODE BEGIN 1 */
 

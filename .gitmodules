@@ -1,3 +1,9 @@
+[submodule "lib/eeprom_in_flash"]
+	path = lib/eeprom_in_flash
+	url = git@github.com:Bastion-RND/mcu-lib-lang-c-eeprom-in-flash.git
+[submodule "lib/discrete_io"]
+	path = lib/discrete_io
+	url = git@github.com:Bastion-RND/mcu-lib-lang-c-discrete-io.git
 [submodule "lib/sim800"]
 	path = lib/sim800
-	url = git@github.com:Bastion-RND/MCU_Libraries_SIM800.git
+	url = git@github.com:Bastion-RND/mcu-lib-lang-c-sim800.git

@@ -53,7 +53,12 @@ dkms.conf
 
 .idea/
 cmake-build-debug/
+cmake-build-minsizerel/
+cmake-build-release/
 
 .cproject
 .mxproject
 .project
+
+cmake/
+build/
