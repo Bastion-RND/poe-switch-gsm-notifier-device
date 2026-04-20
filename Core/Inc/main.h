@@ -93,9 +93,9 @@ void Error_Handler(void);
 #define TAMPER_BTN_GPIO_Port GPIOB
 #define USER_LED_Pin GPIO_PIN_4
 #define USER_LED_GPIO_Port GPIOB
-#define RELAY_1_Pin GPIO_PIN_5
+#define RELAY_1_Pin GPIO_PIN_6
 #define RELAY_1_GPIO_Port GPIOB
-#define RELAY_2_Pin GPIO_PIN_6
+#define RELAY_2_Pin GPIO_PIN_5
 #define RELAY_2_GPIO_Port GPIOB
 #define ADC_220_Pin GPIO_PIN_7
 #define ADC_220_GPIO_Port GPIOB

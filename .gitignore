@@ -60,5 +60,4 @@ cmake-build-release/
 .mxproject
 .project
 
-cmake/
 build/
